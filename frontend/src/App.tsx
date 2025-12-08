@@ -5,6 +5,7 @@ import { checkAuth } from './features/auth/authSlice'
 import Layout from './components/Layout'
 import Dashboard from './pages/Dashboard'
 import ConfigEditor from './pages/ConfigEditor'
+import LibraryManager from './pages/LibraryManager';
 import CollectionsManager from './pages/CollectionsManager'
 import SchedulerDashboard from './pages/Scheduler'
 import LogsViewer from './pages/LogsViewer'
@@ -36,6 +37,7 @@ function App() {
         <Route path="/collections" element={isAuthenticated ? <Layout><CollectionsManager /></Layout> : <Navigate to="/login" />} />
         <Route path="/logs" element={isAuthenticated ? <Layout><LogsViewer /></Layout> : <Navigate to="/login" />} />
         <Route path="/scheduler" element={isAuthenticated ? <Layout><SchedulerDashboard /></Layout> : <Navigate to="/login" />} />
+        <Route path="/about" element={isAuthenticated ? <Layout><About /></Layout> : <Navigate to="/login" />} />
 
         {/* 404 Route */}
         <Route path="*" element={<NotFound />} />

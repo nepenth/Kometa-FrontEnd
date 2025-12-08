@@ -1,23 +1,53 @@
-import React, { useEffect, useState, useRef } from 'react'
-import { Box, Typography, Paper, IconButton, Tooltip, FormControlLabel, Switch } from '@mui/material'
-import { PlayArrow, Pause, DeleteSweep, Download } from '@mui/icons-material'
+import React, { useEffect, useState, useRef, useMemo } from 'react'
+import {
+    Box,
+    Typography,
+    Paper,
+    IconButton,
+    Tooltip,
+    FormControlLabel,
+    Switch,
+    TextField,
+    Select,
+    MenuItem,
+    FormControl,
+    InputLabel,
+    InputAdornment
+} from '@mui/material'
+import { PlayArrow, Pause, DeleteSweep, Download, Search } from '@mui/icons-material'
 import { logWebSocket } from '../services/websocket'
+import { apiService } from '../services/api'
 
 const LogsViewer: React.FC = () => {
     const [logs, setLogs] = useState<string[]>([])
     const [isPaused, setIsPaused] = useState(false)
     const [autoScroll, setAutoScroll] = useState(true)
+    const [searchTerm, setSearchTerm] = useState('')
+    const [logLevel, setLogLevel] = useState('ALL')
     const logsEndRef = useRef<HTMLDivElement>(null)
 
     useEffect(() => {
+        // Fetch historical logs
+        const fetchHistory = async () => {
+            try {
+                const response = await apiService.get('/logs/history?lines=1000')
+                if (response.data && response.data.lines) {
+                    setLogs(response.data.lines.map((l: string) => l.trimEnd()))
+                }
+            } catch (error) {
+                console.error("Failed to fetch log history", error)
+            }
+        }
+        fetchHistory()
+
         logWebSocket.connect()
 
         const handleLogMessage = (message: string) => {
             if (!isPaused) {
                 setLogs((prevLogs) => {
                     const newLogs = [...prevLogs, message]
-                    if (newLogs.length > 1000) {
-                        return newLogs.slice(newLogs.length - 1000)
+                    if (newLogs.length > 2000) {
+                        return newLogs.slice(newLogs.length - 2000)
                     }
                     return newLogs
                 })
@@ -36,7 +66,7 @@ const LogsViewer: React.FC = () => {
         if (autoScroll && logsEndRef.current) {
             logsEndRef.current.scrollIntoView({ behavior: 'smooth' })
         }
-    }, [logs, autoScroll])
+    }, [logs, autoScroll, searchTerm, logLevel])
 
     const handleClearLogs = () => {
         setLogs([])
@@ -51,30 +81,68 @@ const LogsViewer: React.FC = () => {
         element.click()
     }
 
+    const filteredLogs = useMemo(() => {
+        return logs.filter(log => {
+            const matchesSearch = log.toLowerCase().includes(searchTerm.toLowerCase())
+            const matchesLevel = logLevel === 'ALL' || log.includes(logLevel)
+            return matchesSearch && matchesLevel
+        })
+    }, [logs, searchTerm, logLevel])
+
     return (
         <Box sx={{ height: 'calc(100vh - 100px)', display: 'flex', flexDirection: 'column' }}>
-            <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
                 <Typography variant="h4">System Logs</Typography>
-                <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-                    <FormControlLabel
-                        control={<Switch checked={autoScroll} onChange={(e) => setAutoScroll(e.target.checked)} />}
-                        label="Auto-scroll"
+                <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexGrow: 1, justifyContent: 'flex-end' }}>
+                    <TextField
+                        size="small"
+                        placeholder="Search logs..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        InputProps={{
+                            startAdornment: (
+                                <InputAdornment position="start">
+                                    <Search fontSize="small" />
+                                </InputAdornment>
+                            ),
+                        }}
+                        sx={{ width: 250 }}
                     />
-                    <Tooltip title={isPaused ? "Resume" : "Pause"}>
-                        <IconButton onClick={() => setIsPaused(!isPaused)} color={isPaused ? "warning" : "default"}>
-                            {isPaused ? <PlayArrow /> : <Pause />}
-                        </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Clear Logs">
-                        <IconButton onClick={handleClearLogs}>
-                            <DeleteSweep />
-                        </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Download Logs">
-                        <IconButton onClick={handleDownloadLogs}>
-                            <Download />
-                        </IconButton>
-                    </Tooltip>
+                    <FormControl size="small" sx={{ width: 120 }}>
+                        <InputLabel>Level</InputLabel>
+                        <Select
+                            value={logLevel}
+                            label="Level"
+                            onChange={(e) => setLogLevel(e.target.value)}
+                        >
+                            <MenuItem value="ALL">All</MenuItem>
+                            <MenuItem value="INFO">Info</MenuItem>
+                            <MenuItem value="WARNING">Warning</MenuItem>
+                            <MenuItem value="ERROR">Error</MenuItem>
+                            <MenuItem value="DEBUG">Debug</MenuItem>
+                        </Select>
+                    </FormControl>
+                    <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', borderLeft: '1px solid rgba(255,255,255,0.1)', pl: 2 }}>
+                        <FormControlLabel
+                            control={<Switch checked={autoScroll} onChange={(e) => setAutoScroll(e.target.checked)} />}
+                            label="Auto-scroll"
+                        />
+                        <Tooltip title={isPaused ? "Resume" : "Pause"}>
+                            <IconButton onClick={() => setIsPaused(!isPaused)} color={isPaused ? "warning" : "default"}>
+                                {isPaused ? <PlayArrow /> : <Pause />}
+                            </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Clear Logs">
+                            <IconButton onClick={handleClearLogs}>
+                                <DeleteSweep />
+                            </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Download Logs">
+                            <IconButton onClick={handleDownloadLogs}>
+                                <Download />
+                            </IconButton>
+                        </Tooltip>
+                    </Box>
                 </Box>
             </Box>
             <Paper
@@ -92,13 +160,13 @@ const LogsViewer: React.FC = () => {
                     '&::-webkit-scrollbar-thumb': { background: '#475569', borderRadius: '5px' }
                 }}
             >
-                {logs.length === 0 && (
+                {filteredLogs.length === 0 && (
                     <Typography color="text.secondary" sx={{ fontStyle: 'italic' }}>
-                        Waiting for logs...
+                        {logs.length === 0 ? "Waiting for logs..." : "No logs match your filter."}
                     </Typography>
                 )}
-                {logs.map((log, index) => (
-                    <Box key={index} sx={{ mb: 0.5, color: log.includes('ERROR') ? '#ef4444' : log.includes('WARNING') ? '#f59e0b' : '#94a3b8' }}>
+                {filteredLogs.map((log, index) => (
+                    <Box key={index} sx={{ mb: 0.5, color: log.includes('ERROR') ? '#ef4444' : log.includes('WARNING') ? '#f59e0b' : log.includes('DEBUG') ? '#64748b' : '#94a3b8' }}>
                         {log}
                     </Box>
                 ))}

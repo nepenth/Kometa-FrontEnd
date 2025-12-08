@@ -1,29 +1,54 @@
-import { createTheme, alpha } from '@mui/material/styles'
+import { createTheme, alpha, PaletteMode } from '@mui/material/styles'
 
-// Premium Dark Theme for Kometa
-const theme = createTheme({
+// Premium Theme for Kometa
+export const getTheme = (mode: PaletteMode) => createTheme({
   palette: {
-    mode: 'dark',
-    primary: {
-      main: '#6366f1', // Indigo
-      light: '#818cf8',
-      dark: '#4338ca',
-      contrastText: '#ffffff'
-    },
-    secondary: {
-      main: '#ec4899', // Pink
-      light: '#f472b6',
-      dark: '#db2777',
-      contrastText: '#ffffff'
-    },
-    background: {
-      default: '#0f172a', // Slate 900
-      paper: '#1e293b'    // Slate 800
-    },
-    text: {
-      primary: '#f8fafc', // Slate 50
-      secondary: '#94a3b8' // Slate 400
-    },
+    mode,
+    ...(mode === 'dark' ? {
+      // Dark Mode Palette
+      primary: {
+        main: '#6366f1', // Indigo
+        light: '#818cf8',
+        dark: '#4338ca',
+        contrastText: '#ffffff'
+      },
+      secondary: {
+        main: '#ec4899', // Pink
+        light: '#f472b6',
+        dark: '#db2777',
+        contrastText: '#ffffff'
+      },
+      background: {
+        default: '#0f172a', // Slate 900
+        paper: '#1e293b'    // Slate 800
+      },
+      text: {
+        primary: '#f8fafc', // Slate 50
+        secondary: '#94a3b8' // Slate 400
+      },
+    } : {
+      // Light Mode Palette
+      primary: {
+        main: '#4f46e5', // Indigo 600
+        light: '#6366f1',
+        dark: '#4338ca',
+        contrastText: '#ffffff'
+      },
+      secondary: {
+        main: '#db2777', // Pink 600
+        light: '#ec4899',
+        dark: '#be185d',
+        contrastText: '#ffffff'
+      },
+      background: {
+        default: '#f1f5f9', // Slate 100
+        paper: '#ffffff'    // White
+      },
+      text: {
+        primary: '#0f172a', // Slate 900
+        secondary: '#475569' // Slate 600
+      },
+    }),
     error: {
       main: '#ef4444',
       light: '#f87171',
@@ -87,26 +112,26 @@ const theme = createTheme({
     MuiCssBaseline: {
       styleOverrides: {
         body: {
-          scrollbarColor: '#334155 #0f172a',
+          scrollbarColor: mode === 'dark' ? '#334155 #0f172a' : '#cbd5e1 #f1f5f9',
           '&::-webkit-scrollbar, & *::-webkit-scrollbar': {
-            backgroundColor: '#0f172a',
+            backgroundColor: mode === 'dark' ? '#0f172a' : '#f1f5f9',
             width: '8px',
             height: '8px',
           },
           '&::-webkit-scrollbar-thumb, & *::-webkit-scrollbar-thumb': {
             borderRadius: 8,
-            backgroundColor: '#334155',
+            backgroundColor: mode === 'dark' ? '#334155' : '#cbd5e1',
             minHeight: 24,
-            border: '2px solid #0f172a',
+            border: `2px solid ${mode === 'dark' ? '#0f172a' : '#f1f5f9'}`,
           },
           '&::-webkit-scrollbar-thumb:focus, & *::-webkit-scrollbar-thumb:focus': {
-            backgroundColor: '#475569',
+            backgroundColor: mode === 'dark' ? '#475569' : '#94a3b8',
           },
           '&::-webkit-scrollbar-thumb:active, & *::-webkit-scrollbar-thumb:active': {
-            backgroundColor: '#475569',
+            backgroundColor: mode === 'dark' ? '#475569' : '#94a3b8',
           },
           '&::-webkit-scrollbar-thumb:hover, & *::-webkit-scrollbar-thumb:hover': {
-            backgroundColor: '#475569',
+            backgroundColor: mode === 'dark' ? '#475569' : '#94a3b8',
           },
         },
       },
@@ -136,9 +161,9 @@ const theme = createTheme({
         root: {
           borderRadius: 16,
           backgroundImage: 'none',
-          backgroundColor: alpha('#1e293b', 0.7),
+          backgroundColor: mode === 'dark' ? alpha('#1e293b', 0.7) : '#ffffff',
           backdropFilter: 'blur(12px)',
-          border: '1px solid rgba(255, 255, 255, 0.05)',
+          border: mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid rgba(0, 0, 0, 0.05)',
           boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
         }
       }
@@ -153,18 +178,19 @@ const theme = createTheme({
     MuiDrawer: {
       styleOverrides: {
         paper: {
-          backgroundColor: '#0f172a',
-          borderRight: '1px solid rgba(255, 255, 255, 0.05)'
+          backgroundColor: mode === 'dark' ? '#0f172a' : '#ffffff',
+          borderRight: mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid rgba(0, 0, 0, 0.05)'
         }
       }
     },
     MuiAppBar: {
       styleOverrides: {
         root: {
-          backgroundColor: alpha('#0f172a', 0.8),
+          backgroundColor: mode === 'dark' ? alpha('#0f172a', 0.8) : alpha('#ffffff', 0.8),
           backdropFilter: 'blur(12px)',
           boxShadow: 'none',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.05)'
+          borderBottom: mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid rgba(0, 0, 0, 0.05)',
+          color: mode === 'dark' ? '#fff' : '#0f172a'
         }
       }
     },
@@ -187,12 +213,12 @@ const theme = createTheme({
         root: {
           '& .MuiOutlinedInput-root': {
             borderRadius: 10,
-            backgroundColor: alpha('#000000', 0.2),
+            backgroundColor: mode === 'dark' ? alpha('#000000', 0.2) : alpha('#ffffff', 0.5),
             '& fieldset': {
-              borderColor: 'rgba(255, 255, 255, 0.1)',
+              borderColor: mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
             },
             '&:hover fieldset': {
-              borderColor: 'rgba(255, 255, 255, 0.2)',
+              borderColor: mode === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)',
             },
           }
         }
@@ -203,5 +229,3 @@ const theme = createTheme({
     borderRadius: 12
   }
 })
-
-export default theme

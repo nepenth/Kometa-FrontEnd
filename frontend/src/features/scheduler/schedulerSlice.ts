@@ -1,16 +1,20 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import { apiService } from '../../services/api'
 
-interface Job {
+export interface Job {
     id: string
     name: string
-    schedule: string
-    next_run: string
-    last_run: string
-    status: 'idle' | 'running' | 'queued' | 'failed'
+    type: 'interval' | 'daily'
+    value: string
+    unit: 'minutes' | 'hours' | 'days'
+    target: string
+    next_run?: string
+    last_run?: string
+    status: string
+    schedule: string // Display string
 }
 
-interface SchedulerState {
+export interface SchedulerState {
     jobs: Job[]
     loading: boolean
     error: string | null
@@ -34,17 +38,41 @@ export const fetchJobs = createAsyncThunk(
     }
 )
 
-export const triggerJob = createAsyncThunk(
-    'scheduler/triggerJob',
-    async (jobId: string, { rejectWithValue }) => {
-        try {
-            const response = await apiService.post<any>(`/scheduler/trigger/${jobId}`)
-            return response.data
-        } catch (error: any) {
-            return rejectWithValue(error.response?.data?.message || 'Failed to trigger job')
-        }
+export const createJob = createAsyncThunk('scheduler/createJob', async (jobData: Partial<Job>, { rejectWithValue }) => {
+    try {
+        const response = await apiService.post('/scheduler/jobs', jobData)
+        return response.data
+    } catch (error: any) {
+        return rejectWithValue(error.response?.data?.message || 'Failed to create job')
     }
-)
+})
+
+export const updateJob = createAsyncThunk('scheduler/updateJob', async ({ id, data }: { id: string, data: Partial<Job> }, { rejectWithValue }) => {
+    try {
+        const response = await apiService.put(`/scheduler/jobs/${id}`, data)
+        return response.data
+    } catch (error: any) {
+        return rejectWithValue(error.response?.data?.message || 'Failed to update job')
+    }
+})
+
+export const deleteJob = createAsyncThunk('scheduler/deleteJob', async (id: string, { rejectWithValue }) => {
+    try {
+        await apiService.delete(`/scheduler/jobs/${id}`)
+        return id
+    } catch (error: any) {
+        return rejectWithValue(error.response?.data?.message || 'Failed to delete job')
+    }
+})
+
+export const triggerJob = createAsyncThunk('scheduler/triggerJob', async (jobId: string, { rejectWithValue }) => {
+    try {
+        const response = await apiService.post(`/scheduler/trigger/${jobId}`)
+        return { jobId, status: response.data.status }
+    } catch (error: any) {
+        return rejectWithValue(error.response?.data?.message || 'Failed to trigger job')
+    }
+})
 
 export const updateSchedule = createAsyncThunk(
     'scheduler/updateSchedule',
@@ -76,10 +104,22 @@ const schedulerSlice = createSlice({
                 state.loading = false
                 state.error = action.payload as string
             })
+            .addCase(createJob.fulfilled, (state, action) => {
+                state.jobs.push(action.payload)
+            })
+            .addCase(updateJob.fulfilled, (state, action) => {
+                const index = state.jobs.findIndex(j => j.id === action.payload.id)
+                if (index !== -1) {
+                    state.jobs[index] = action.payload
+                }
+            })
+            .addCase(deleteJob.fulfilled, (state, action) => {
+                state.jobs = state.jobs.filter(j => j.id !== action.payload)
+            })
             .addCase(triggerJob.fulfilled, (state, action) => {
-                const job = state.jobs.find(j => j.id === action.payload.job_id)
+                const job = state.jobs.find(j => j.id === action.payload.jobId)
                 if (job) {
-                    job.status = 'queued'
+                    job.status = action.payload.status
                 }
             })
             .addCase(updateSchedule.fulfilled, (state, action) => {

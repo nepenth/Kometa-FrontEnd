@@ -1,8 +1,10 @@
 import logging
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
-from typing import List
+import os
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
+from typing import List, Optional
 import asyncio
 from datetime import datetime
+from modules.logs import LOG_DIR, MAIN_LOG
 
 router = APIRouter()
 
@@ -32,14 +34,19 @@ class WebSocketHandler(logging.Handler):
     def __init__(self, manager):
         super().__init__()
         self.manager = manager
-        self.loop = asyncio.get_event_loop()
+        # The loop might not be running when the handler is initialized,
+        # so we get it dynamically in emit.
+        # self.loop = asyncio.get_event_loop() # Removed as per user's implied change
 
     def emit(self, record):
         try:
             msg = self.format(record)
             # Schedule the broadcast in the event loop
-            if self.loop.is_running():
-                asyncio.run_coroutine_threadsafe(self.manager.broadcast(msg), self.loop)
+            # The user's provided snippet changes this to ensure_future and gets loop dynamically.
+            # Adopting the user's change for emit logic.
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                asyncio.ensure_future(self.manager.broadcast(msg), loop=loop) # Added loop=loop for clarity
         except Exception:
             self.handleError(record)
 

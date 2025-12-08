@@ -1254,11 +1254,16 @@ def create_fastapi_app():
         allow_headers=["*"],
     )
 
+    # Initialize Scheduler
+    from modules.scheduler_manager import scheduler_manager
+    scheduler_manager.start()
+
     # Include Routers
     # Import here to avoid circular imports or dependency issues if FastAPI is missing
-    from routers import auth, config, scheduler, logs
+    from routers import auth, config, scheduler, logs, libraries
     app.include_router(auth.router, prefix="/api/v1", tags=["Authentication"])
     app.include_router(config.router, prefix="/api/v1", tags=["Configuration"])
+    app.include_router(libraries.router, prefix="/api/v1", tags=["Libraries"])
     app.include_router(scheduler.router, prefix="/api/v1", tags=["Scheduler"])
     app.include_router(logs.router, tags=["Logs"])
 

@@ -6,6 +6,7 @@ import configReducer from './features/config/configSlice'
 import operationsReducer from './features/operations/operationsSlice'
 import statusReducer from './features/status/statusSlice'
 import schedulerReducer from './features/scheduler/schedulerSlice'
+import librariesReducer from './features/libraries/librariesSlice'
 
 export const store = configureStore({
   reducer: {
@@ -13,7 +14,8 @@ export const store = configureStore({
     config: configReducer,
     operations: operationsReducer,
     status: statusReducer,
-    scheduler: schedulerReducer
+    scheduler: schedulerReducer,
+    libraries: librariesReducer
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

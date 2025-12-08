@@ -72,6 +72,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     const menuItems = [
         { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
         { text: 'Configuration', icon: <SettingsIcon />, path: '/config' },
+        { text: 'Libraries', icon: <LibraryIcon />, path: '/libraries' },
         { text: 'Collections', icon: <CollectionsIcon />, path: '/collections' },
         { text: 'Scheduler', icon: <ScheduleIcon />, path: '/scheduler' },
         { text: 'Logs', icon: <LogsIcon />, path: '/logs' },
@@ -148,6 +149,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     </IconButton>
                     <Box sx={{ flexGrow: 1 }} />
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <Tooltip title={`Switch to ${mode === 'dark' ? 'light' : 'dark'} mode`}>
+                            <IconButton onClick={toggleColorMode} color="inherit">
+                                {mode === 'dark' ? <LightModeIcon /> : <DarkModeIcon />}
+                            </IconButton>
+                        </Tooltip>
                         <Typography variant="subtitle2" sx={{ display: { xs: 'none', sm: 'block' } }}>
                             {user?.username || 'Admin'}
                         </Typography>
