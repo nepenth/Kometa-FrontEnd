@@ -4,21 +4,6 @@ from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime
 from modules.logs import MyLogger
 
-# FastAPI imports for web interface
-try:
-    from fastapi import FastAPI, APIRouter, Depends, HTTPException, status, WebSocket, WebSocketDisconnect
-    from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-    from fastapi.middleware.cors import CORSMiddleware
-    from fastapi.staticfiles import StaticFiles
-    from pydantic import BaseModel
-    from typing import Optional, List, Dict, Any
-    import uvicorn
-    import jwt
-    from datetime import datetime, timedelta
-    FASTAPI_AVAILABLE = True
-except ImportError:
-    FASTAPI_AVAILABLE = False
-
 if sys.version_info[0] != 3 or sys.version_info[1] < 9:
     print("Python Version %s.%s.%s has been detected and is not supported. Kometa requires a minimum of Python 3.9.0." % (sys.version_info[0], sys.version_info[1], sys.version_info[2]))
     sys.exit(0)
@@ -86,9 +71,7 @@ arguments = {
     "read-only-config": {"args": "ro", "type": "bool", "help": "Run without writing to the config"},
     "divider": {"args": "d", "type": "str", "default": "=", "help": "Character that divides the sections (Default: '=')"},
     "width": {"args": "w", "type": "int", "default": 100, "help": "Screen Width (Default: 100)"},
-    "low-priority": {"args": "lp", "type": "bool", "help": "Run Kometa with lower priority"},
-    "web-interface": {"args": "web", "type": "bool", "help": "Start Kometa with web interface"},
-    "web-port": {"args": "wp", "type": "int", "default": 8000, "help": "Web interface port (Default: 8000)"}
+    "low-priority": {"args": "lp", "type": "bool", "help": "Run Kometa with lower priority"}
 }
 
 parser = argparse.ArgumentParser()
@@ -153,7 +136,7 @@ for arg_key, arg_data in arguments.items():
     run_args[arg_key] = get_env(final_vars, getattr(args, arg_key.replace("-", "_")), arg_bool=arg_data["type"] == "bool", arg_int=arg_data["type"] == "int")
 
 env_branch = get_env("BRANCH_NAME", "master")
-is_docker = False  # Removed Docker environment detection for LXC migration
+is_docker = get_env("KOMETA_DOCKER", False, arg_bool=True)
 is_linuxserver = get_env("KOMETA_LINUXSERVER", False, arg_bool=True)
 
 secret_args = {}
@@ -323,8 +306,8 @@ def start(attrs):
         logger.info_center("|__|\\__\\ \\______/  |__|  |__| |_______|    |__|  /__/     \\__\\ ")
         logger.info("")
         my_requests = Requests(local_version, local_part, env_branch, git_branch, verify_ssl=False if run_args["no-verify-ssl"] else True)
-        if is_linuxserver:
-            system_ver = f"Linuxserver: {env_branch}"
+        if is_linuxserver or is_docker:
+            system_ver = f"{'Linuxserver' if is_linuxserver else 'Docker'}: {env_branch}"
         else:
             system_ver = f"Python {platform.python_version()}) ({f'Git: {git_branch}' if git_branch else f'Branch: {my_requests.branch}'}"
         logger.info(f"    Version: {my_requests.local} ({system_ver})")
@@ -335,7 +318,7 @@ def start(attrs):
         logger.info(f"    Available Memory: {round(psutil.virtual_memory().available / (1024.0 ** 3))} GB")
         logger.info(f"    Process Priority: {'low' if run_args['low-priority'] else 'normal'}")
 
-        if not is_linuxserver:
+        if not is_docker and not is_linuxserver:
             try:
                 with open(os.path.abspath(os.path.join(os.path.dirname(__file__), "requirements.txt")), "r") as file:
                     required_versions = {ln.split("==")[0]: ln.split("==")[1].split(";")[0].strip() for ln in file.readlines()}
@@ -1181,14 +1164,7 @@ def run_playlists(config):
 
 if __name__ == "__main__":
     try:
-        # Check if web interface mode is requested
-        if run_args["web-interface"]:
-            logger.info("Starting Kometa in web interface mode")
-            logger.info(f"Web interface will be available on port {run_args['web-port']}")
-
-            # Start FastAPI server
-            start_fastapi_server()
-        elif run_args["run"] or run_args["tests"] or run_args["run-collections"] or run_args["run-libraries"] or run_args["run-files"] or run_args["resume"]:
+        if run_args["run"] or run_args["tests"] or run_args["run-collections"] or run_args["run-libraries"] or run_args["run-files"] or run_args["resume"]:
             process({"collections": run_args["run-collections"], "libraries": run_args["run-libraries"], "files": run_args["run-files"]})
         else:
             times_to_run = util.get_list_bar_then_comma(run_args["times"])
@@ -1229,235 +1205,3 @@ if __name__ == "__main__":
                 time.sleep(60)
     except KeyboardInterrupt:
         logger.separator("Exiting Kometa")
-
-# FastAPI Web Interface Implementation
-class Token(BaseModel):
-    access_token: str
-    token_type: str
-
-class TokenData(BaseModel):
-    username: Optional[str] = None
-
-class User(BaseModel):
-    username: str
-    email: Optional[str] = None
-    full_name: Optional[str] = None
-    disabled: Optional[bool] = None
-
-class UserInDB(User):
-    hashed_password: str
-
-class ConfigRequest(BaseModel):
-    config_name: str
-    config_content: str
-
-class OperationRequest(BaseModel):
-    operation_type: str
-    parameters: Dict[str, Any]
-
-class StatusResponse(BaseModel):
-    status: str
-    message: str
-    data: Optional[Dict[str, Any]] = None
-
-# FastAPI Application Setup
-def create_fastapi_app():
-    app = FastAPI(
-        title="Kometa Web Interface API",
-        description="API for Kometa Plex Media Manager with Web Interface",
-        version="1.0.0",
-        docs_url="/api/docs",
-        redoc_url="/api/redoc",
-        openapi_url="/api/openapi.json"
-    )
-
-    # CORS Middleware
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=["*"],
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
-
-    # Security setup
-    oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-
-    # API Router
-    api_router = APIRouter(prefix="/api/v1")
-
-    # Mock user database for authentication
-    fake_users_db = {
-        "admin": {
-            "username": "admin",
-            "full_name": "Kometa Admin",
-            "email": "admin@kometa.example.com",
-            "hashed_password": "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW",  # "secret"
-            "disabled": False,
-        }
-    }
-
-    def get_user(db, username: str):
-        if username in db:
-            user_dict = db[username]
-            return UserInDB(**user_dict)
-
-    def authenticate_user(fake_db, username: str, password: str):
-        user = get_user(fake_db, username)
-        if not user:
-            return False
-        if not password == "secret":  # In production, use proper password hashing
-            return False
-        return user
-
-    def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
-        to_encode = data.copy()
-        if expires_delta:
-            expire = datetime.utcnow() + expires_delta
-        else:
-            expire = datetime.utcnow() + timedelta(minutes=15)
-        to_encode.update({"exp": expire})
-        encoded_jwt = jwt.encode(to_encode, "SECRET_KEY", algorithm="HS256")
-        return encoded_jwt
-
-    async def get_current_user(token: str = Depends(oauth2_scheme)):
-        credentials_exception = HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-        try:
-            payload = jwt.decode(token, "SECRET_KEY", algorithms=["HS256"])
-            username: str = payload.get("sub")
-            if username is None:
-                raise credentials_exception
-            token_data = TokenData(username=username)
-        except jwt.PyJWTError:
-            raise credentials_exception
-        user = get_user(fake_users_db, username=token_data.username)
-        if user is None:
-            raise credentials_exception
-        return user
-
-    # Authentication Endpoints
-    @api_router.post("/token", response_model=Token)
-    async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
-        user = authenticate_user(fake_users_db, form_data.username, form_data.password)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Incorrect username or password",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-        access_token_expires = timedelta(minutes=30)
-        access_token = create_access_token(
-            data={"sub": user.username}, expires_delta=access_token_expires
-        )
-        return {"access_token": access_token, "token_type": "bearer"}
-
-    # Configuration Endpoints
-    @api_router.get("/config", response_model=StatusResponse)
-    async def get_config(current_user: User = Depends(get_current_user)):
-        try:
-            # This will be replaced with actual config reading logic
-            return {
-                "status": "success",
-                "message": "Configuration retrieved",
-                "data": {
-                    "config_files": ["config.yml"],
-                    "current_config": "config.yml"
-                }
-            }
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
-
-    @api_router.post("/config", response_model=StatusResponse)
-    async def save_config(config_request: ConfigRequest, current_user: User = Depends(get_current_user)):
-        try:
-            # This will be replaced with actual config saving logic
-            return {
-                "status": "success",
-                "message": "Configuration saved",
-                "data": {
-                    "config_name": config_request.config_name,
-                    "saved": True
-                }
-            }
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
-
-    # Operation Endpoints
-    @api_router.get("/operations", response_model=StatusResponse)
-    async def get_operations(current_user: User = Depends(get_current_user)):
-        return {
-            "status": "success",
-            "message": "Available operations retrieved",
-            "data": {
-                "operations": ["run_collections", "run_metadata", "run_overlays"]
-            }
-        }
-
-    @api_router.post("/operations", response_model=StatusResponse)
-    async def run_operation(operation_request: OperationRequest, current_user: User = Depends(get_current_user)):
-        try:
-            # This will be replaced with actual operation execution logic
-            return {
-                "status": "success",
-                "message": f"Operation {operation_request.operation_type} started",
-                "data": {
-                    "operation_id": str(uuid.uuid4()),
-                    "status": "queued"
-                }
-            }
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
-
-    # Status Endpoints
-    @api_router.get("/status", response_model=StatusResponse)
-    async def get_status(current_user: User = Depends(get_current_user)):
-        return {
-            "status": "success",
-            "message": "System status retrieved",
-            "data": {
-                "version": local_version,
-                "uptime": "00:00:00",
-                "last_run": None,
-                "next_run": None
-            }
-        }
-
-    # WebSocket for real-time updates
-    @api_router.websocket("/ws")
-    async def websocket_endpoint(websocket: WebSocket):
-        await websocket.accept()
-        try:
-            while True:
-                data = await websocket.receive_text()
-                await websocket.send_text(f"Message received: {data}")
-        except WebSocketDisconnect:
-            print("Client disconnected")
-
-    # Mount API router
-    app.include_router(api_router)
-
-    # Static files for frontend (will be added later)
-    # app.mount("/", StaticFiles(directory="frontend/dist", html=True), name="frontend")
-
-    return app
-
-# Global FastAPI app instance
-fastapi_app = None
-
-def start_fastapi_server():
-    global fastapi_app
-    if not FASTAPI_AVAILABLE:
-        logger.warning("FastAPI not available - web interface disabled")
-        return
-
-    try:
-        fastapi_app = create_fastapi_app()
-        logger.info("Starting FastAPI server on http://0.0.0.0:8000")
-        uvicorn.run(fastapi_app, host="0.0.0.0", port=8000)
-    except Exception as e:
-        logger.error(f"Failed to start FastAPI server: {e}")
-        logger.stacktrace()
