@@ -10,8 +10,10 @@ import SchedulerDashboard from './pages/Scheduler'
 import LogsViewer from './pages/LogsViewer'
 import Login from './pages/Login'
 import Loading from './components/Loading'
+import ErrorBoundary from './components/ErrorBoundary'
+import NotFound from './pages/NotFound'
 
-const App: React.FC = () => {
+function App() {
   const dispatch = useAppDispatch()
   const { isAuthenticated, loading } = useAppSelector((state) => state.auth)
 
@@ -20,27 +22,25 @@ const App: React.FC = () => {
   }, [dispatch])
 
   if (loading) {
-    return <Loading />
+    return <Loading message="Initializing..." />
   }
 
   return (
-    <Layout>
+    <ErrorBoundary>
       <Routes>
-        <Route path="/login" element={<Login />} />
-        {isAuthenticated ? (
-          <>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/config" element={<ConfigEditor />} />
-            <Route path="/collections" element={<CollectionsManager />} />
-            <Route path="/scheduler" element={<SchedulerDashboard />} />
-            <Route path="/logs" element={<LogsViewer />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </>
-        ) : (
-          <Route path="*" element={<Navigate to="/login" replace />} />
-        )}
+        <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to="/" />} />
+
+        {/* Protected Routes */}
+        <Route path="/" element={isAuthenticated ? <Layout><Dashboard /></Layout> : <Navigate to="/login" />} />
+        <Route path="/config" element={isAuthenticated ? <Layout><ConfigEditor /></Layout> : <Navigate to="/login" />} />
+        <Route path="/collections" element={isAuthenticated ? <Layout><CollectionsManager /></Layout> : <Navigate to="/login" />} />
+        <Route path="/logs" element={isAuthenticated ? <Layout><LogsViewer /></Layout> : <Navigate to="/login" />} />
+        <Route path="/scheduler" element={isAuthenticated ? <Layout><SchedulerDashboard /></Layout> : <Navigate to="/login" />} />
+
+        {/* 404 Route */}
+        <Route path="*" element={<NotFound />} />
       </Routes>
-    </Layout>
+    </ErrorBoundary>
   )
 }
 

@@ -1479,72 +1479,61 @@ def create_fastapi_app():
                     "id": "trakt_sync",
                     "name": "Trakt Sync",
                     "schedule": "0 5 * * *",
-                    "next_run": (datetime.now() + timedelta(hours=5)).strftime("%Y-%m-%d %H:%M:%S"),
-                    "last_run": (datetime.now() - timedelta(hours=19)).strftime("%Y-%m-%d %H:%M:%S"),
-                    "status": "idle"
-                },
-                {
-                    "id": "overlays",
-                    "name": "Apply Overlays",
-                    "schedule": "0 2 * * *",
-                    "next_run": (datetime.now() + timedelta(hours=2)).strftime("%Y-%m-%d %H:%M:%S"),
-                    "last_run": (datetime.now() - timedelta(hours=22)).strftime("%Y-%m-%d %H:%M:%S"),
-                    "status": "running"
-                }
-            ]
-        }
+```python
+from fastapi import FastAPI, Depends, HTTPException, status, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+import uvicorn
+import os
+import argparse
+import time
+import asyncio
+import logging
+from routers import auth, config, scheduler, logs
 
-    @api_router.post("/scheduler/trigger/{job_id}", response_model=Dict[str, Any])
-    async def trigger_job(job_id: str, current_user: User = Depends(get_current_user)):
-        return {
-            "status": "success",
-            "message": f"Job {job_id} triggered",
-            "data": {
-                "job_id": job_id,
-                "status": "queued"
-            }
-        }
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="[%(asctime)s] [%(levelname)s] %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S"
+)
+logger = logging.getLogger("kometa")
 
-    @api_router.post("/scheduler/schedule/{job_id}", response_model=Dict[str, Any])
-    async def update_schedule(job_id: str, schedule: str, current_user: User = Depends(get_current_user)):
-        return {
-            "status": "success",
-            "message": f"Schedule for {job_id} updated to {schedule}",
-            "data": {
-                "job_id": job_id,
-                "schedule": schedule
-            }
-        }
+def create_fastapi_app():
+    app = FastAPI(
+        title="Kometa Web Interface API",
+        description="API for Kometa Plex Media Manager with Web Interface",
+        version="1.0.0",
+        docs_url="/api/docs",
+        redoc_url="/api/redoc",
+        openapi_url="/api/openapi.json"
+    )
 
-    # WebSocket for real-time updates
-    @app.websocket("/ws/logs")
-    async def websocket_endpoint(websocket: WebSocket):
-        await manager.connect(websocket)
-        try:
-            while True:
-                # Keep connection alive
-                await websocket.receive_text()
-        except WebSocketDisconnect:
-            manager.disconnect(websocket)
+    # CORS Middleware
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    # Include Routers
+    app.include_router(auth.router, prefix="/api/v1", tags=["Authentication"])
+    app.include_router(config.router, prefix="/api/v1", tags=["Configuration"])
+    app.include_router(scheduler.router, prefix="/api/v1", tags=["Scheduler"])
+    app.include_router(logs.router, tags=["Logs"]) # WebSocket endpoint doesn't need /api/v1 prefix usually, but let's check frontend
 
     @app.on_event("startup")
     async def startup_event():
-        asyncio.create_task(log_generator())
-
-    # Mount API router
-    app.include_router(api_router)
+        # Start the log generator background task
+        asyncio.create_task(logs.log_generator())
 
     # Static files for frontend (will be added later)
     # app.mount("/", StaticFiles(directory="frontend/dist", html=True), name="frontend")
 
     return app
 
-# Global FastAPI app instance
-fastapi_app = None
-
-def start_fastapi_server():
-    global fastapi_app
-    if not FASTAPI_AVAILABLE:
         logger.warning("FastAPI not available - web interface disabled")
         return
 

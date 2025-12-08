@@ -3,9 +3,25 @@ import { apiService } from '../../services/api'
 import axios from 'axios'
 import { RootState } from '../../store'
 
+interface ConfigResponse {
+  status: string
+  message: string
+  data: {
+    config_files: string[]
+    current_config: string
+    config_content?: string
+  }
+}
+
+interface SchemaResponse {
+  status: string
+  message: string
+  data: any // Schema structure is complex, keeping any for data property is acceptable for now
+}
+
 interface ConfigState {
-  config: any
-  schema: any
+  config: ConfigResponse | null
+  schema: SchemaResponse | null
   loading: boolean
   error: string | null
   lastUpdated: string | null
@@ -35,8 +51,8 @@ export const fetchConfigSchema = createAsyncThunk(
   'config/fetchSchema',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await apiService.get<any>('/config/schema')
-      return response.data
+      const response = await apiService.get<SchemaResponse>('/config/schema')
+      return response
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch schema')
     }

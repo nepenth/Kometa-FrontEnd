@@ -66,7 +66,8 @@ export const login = createAsyncThunk(
       }
 
       return { token: access_token, user }
-    } catch (error: any) {
+    } catch (err) {
+      const error = err as any
       return rejectWithValue(error.response?.data?.detail || 'Login failed')
     }
   }

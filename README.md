@@ -16,7 +16,7 @@ This is a forked version of Kometa that adds a web-based management interface wh
 
 ```bash
 cd /opt  # or your preferred installation directory
-git clone https://github.com/your-username/Kometa-FrontEnd.git kometa
+git clone https://github.com/nepenth/Kometa-FrontEnd.git kometa
 cd kometa
 ```
 
@@ -38,13 +38,13 @@ cp config/config.yml.template config/config.yml
 
 2. Edit the configuration file:
 ```bash
-nano config/config.yml
+vi config/config.yml
 ```
 
 3. Set up your environment variables (optional):
 ```bash
 cp config/.env.template config/.env
-nano config/.env
+vi config/.env
 ```
 
 ### Step 4: Run Kometa
