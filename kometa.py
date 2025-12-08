@@ -1231,275 +1231,11 @@ if __name__ == "__main__":
         logger.separator("Exiting Kometa")
 
 # FastAPI Web Interface Implementation
-class Token(BaseModel):
-    access_token: str
-    token_type: str
-
-class TokenData(BaseModel):
-    username: Optional[str] = None
-
-class User(BaseModel):
-    username: str
-    email: Optional[str] = None
-    full_name: Optional[str] = None
-    disabled: Optional[bool] = None
-
-class UserInDB(User):
-    hashed_password: str
-
-class ConfigRequest(BaseModel):
-    config_name: str
-    config_content: str
-
-class OperationRequest(BaseModel):
-    operation_type: str
-    parameters: Dict[str, Any]
-
-class StatusResponse(BaseModel):
-    status: str
-    message: str
-    data: Optional[Dict[str, Any]] = None
-
-# FastAPI Application Setup
 def create_fastapi_app():
-    app = FastAPI(
-        title="Kometa Web Interface API",
-        description="API for Kometa Plex Media Manager with Web Interface",
-        version="1.0.0",
-        docs_url="/api/docs",
-        redoc_url="/api/redoc",
-        openapi_url="/api/openapi.json"
-    )
+    if not FASTAPI_AVAILABLE:
+        logger.warning("FastAPI not available - web interface disabled")
+        return None
 
-    # CORS Middleware
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=["*"],
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
-
-    # Security setup
-    oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-
-    # API Router
-    api_router = APIRouter(prefix="/api/v1")
-
-    # Mock user database for authentication
-    fake_users_db = {
-        "admin": {
-            "username": "admin",
-            "full_name": "Kometa Admin",
-            "email": "admin@kometa.example.com",
-            "hashed_password": "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW",  # "secret"
-            "disabled": False,
-        }
-    }
-
-    def get_user(db, username: str):
-        if username in db:
-            user_dict = db[username]
-            return UserInDB(**user_dict)
-
-    def authenticate_user(fake_db, username: str, password: str):
-        user = get_user(fake_db, username)
-        if not user:
-            return False
-        if not password == "secret":  # In production, use proper password hashing
-            return False
-        return user
-
-    def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
-        to_encode = data.copy()
-        if expires_delta:
-            expire = datetime.utcnow() + expires_delta
-        else:
-            expire = datetime.utcnow() + timedelta(minutes=15)
-        to_encode.update({"exp": expire})
-        encoded_jwt = jwt.encode(to_encode, "SECRET_KEY", algorithm="HS256")
-        return encoded_jwt
-
-    async def get_current_user(token: str = Depends(oauth2_scheme)):
-        credentials_exception = HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-        try:
-            payload = jwt.decode(token, "SECRET_KEY", algorithms=["HS256"])
-            username: str = payload.get("sub")
-            if username is None:
-                raise credentials_exception
-            token_data = TokenData(username=username)
-        except jwt.PyJWTError:
-            raise credentials_exception
-        user = get_user(fake_users_db, username=token_data.username)
-        if user is None:
-            raise credentials_exception
-        return user
-
-    # Authentication Endpoints
-    @api_router.post("/token", response_model=Token)
-    async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
-        user = authenticate_user(fake_users_db, form_data.username, form_data.password)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Incorrect username or password",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-        access_token_expires = timedelta(minutes=30)
-        access_token = create_access_token(
-            data={"sub": user.username}, expires_delta=access_token_expires
-        )
-        return {"access_token": access_token, "token_type": "bearer"}
-
-    # Configuration Endpoints
-    @api_router.get("/config", response_model=StatusResponse)
-    async def get_config(current_user: User = Depends(get_current_user)):
-        try:
-            # This will be replaced with actual config reading logic
-            return {
-                "status": "success",
-                "message": "Configuration retrieved",
-                "data": {
-                    "config_files": ["config.yml"],
-                    "current_config": "config.yml"
-                }
-            }
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
-
-    @api_router.post("/config", response_model=StatusResponse)
-    async def save_config(config_request: ConfigRequest, current_user: User = Depends(get_current_user)):
-        try:
-            # This will be replaced with actual config saving logic
-            return {
-                "status": "success",
-                "message": "Configuration saved",
-                "data": {
-                    "config_name": config_request.config_name,
-                    "saved": True
-                }
-            }
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
-
-    # Operation Endpoints
-    @api_router.get("/operations", response_model=StatusResponse)
-    async def get_operations(current_user: User = Depends(get_current_user)):
-        return {
-            "status": "success",
-            "message": "Available operations retrieved",
-            "data": {
-                "operations": ["run_collections", "run_metadata", "run_overlays"]
-            }
-        }
-
-    @api_router.post("/operations", response_model=StatusResponse)
-    async def run_operation(operation_request: OperationRequest, current_user: User = Depends(get_current_user)):
-        try:
-            # This will be replaced with actual operation execution logic
-            return {
-                "status": "success",
-                "message": f"Operation {operation_request.operation_type} started",
-                "data": {
-                    "operation_id": str(uuid.uuid4()),
-                    "status": "queued"
-                }
-            }
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
-
-    # Status Endpoints
-    @api_router.get("/status", response_model=StatusResponse)
-    async def get_status(current_user: User = Depends(get_current_user)):
-        return {
-            "status": "success",
-            "message": "System status retrieved",
-            "data": {
-                "version": local_version,
-                "uptime": "00:00:00",
-                "last_run": None,
-                "next_run": None
-            }
-        }
-
-    @api_router.get("/config/schema", response_model=Dict[str, Any])
-    async def get_config_schema(current_user: User = Depends(get_current_user)):
-        # Mock schema for Monaco Editor intellisense
-        return {
-            "status": "success",
-            "message": "Schema retrieved",
-            "data": {
-                "libraries": {
-                    "type": "object",
-                    "description": "Library definitions",
-                    "additionalProperties": {
-                        "type": "object",
-                        "properties": {
-                            "metadata_path": {"type": "string"},
-                            "settings": {"type": "object"}
-                        }
-                    }
-                },
-                "playlist_files": {
-                    "type": "array",
-                    "items": {"type": "string"}
-                },
-                "settings": {
-                    "type": "object",
-                    "properties": {
-                        "cache": {"type": "boolean"},
-                        "cache_expiration": {"type": "integer"},
-                        "asset_directory": {"type": "string"}
-                    }
-                }
-            }
-        }
-
-    # Scheduler Endpoints (Mock)
-    @api_router.get("/scheduler/jobs", response_model=Dict[str, Any])
-    async def get_scheduler_jobs(current_user: User = Depends(get_current_user)):
-        # Mock jobs
-        return {
-            "status": "success",
-            "message": "Jobs retrieved",
-            "data": [
-                {
-                    "id": "plex_sync",
-                    "name": "Plex Sync",
-                    "schedule": "0 4 * * *",
-                    "next_run": (datetime.now() + timedelta(hours=4)).strftime("%Y-%m-%d %H:%M:%S"),
-                    "last_run": (datetime.now() - timedelta(hours=20)).strftime("%Y-%m-%d %H:%M:%S"),
-                    "status": "idle"
-                },
-                {
-                    "id": "trakt_sync",
-                    "name": "Trakt Sync",
-                    "schedule": "0 5 * * *",
-```python
-from fastapi import FastAPI, Depends, HTTPException, status, Request
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-import uvicorn
-import os
-import argparse
-import time
-import asyncio
-import logging
-from routers import auth, config, scheduler, logs
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="[%(asctime)s] [%(levelname)s] %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S"
-)
-logger = logging.getLogger("kometa")
-
-def create_fastapi_app():
     app = FastAPI(
         title="Kometa Web Interface API",
         description="API for Kometa Plex Media Manager with Web Interface",
@@ -1519,28 +1255,26 @@ def create_fastapi_app():
     )
 
     # Include Routers
+    # Import here to avoid circular imports or dependency issues if FastAPI is missing
+    from routers import auth, config, scheduler, logs
     app.include_router(auth.router, prefix="/api/v1", tags=["Authentication"])
     app.include_router(config.router, prefix="/api/v1", tags=["Configuration"])
     app.include_router(scheduler.router, prefix="/api/v1", tags=["Scheduler"])
-    app.include_router(logs.router, tags=["Logs"]) # WebSocket endpoint doesn't need /api/v1 prefix usually, but let's check frontend
+    app.include_router(logs.router, tags=["Logs"])
 
     @app.on_event("startup")
     async def startup_event():
         # Start the log generator background task
         asyncio.create_task(logs.log_generator())
 
-    # Static files for frontend (will be added later)
-    # app.mount("/", StaticFiles(directory="frontend/dist", html=True), name="frontend")
-
     return app
 
-        logger.warning("FastAPI not available - web interface disabled")
-        return
-
+def start_fastapi_server():
     try:
         fastapi_app = create_fastapi_app()
-        logger.info("Starting FastAPI server on http://0.0.0.0:8000")
-        uvicorn.run(fastapi_app, host="0.0.0.0", port=8000)
+        if fastapi_app:
+            logger.info(f"Starting FastAPI server on http://0.0.0.0:{run_args['web-port']}")
+            uvicorn.run(fastapi_app, host="0.0.0.0", port=run_args["web-port"])
     except Exception as e:
         logger.error(f"Failed to start FastAPI server: {e}")
         logger.stacktrace()

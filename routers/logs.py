@@ -1,3 +1,4 @@
+import logging
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from typing import List
 import asyncio
@@ -26,16 +27,34 @@ class ConnectionManager:
 
 manager = ConnectionManager()
 
-# Mock Log Generator (Background Task)
-async def log_generator():
-    while True:
-        await asyncio.sleep(2)
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        levels = ["INFO", "DEBUG", "WARNING", "ERROR"]
-        import random
-        level = random.choice(levels)
-        message = f"[{timestamp}] [{level}] This is a simulated log message from Kometa backend."
-        await manager.broadcast(message)
+# Custom Logging Handler
+class WebSocketHandler(logging.Handler):
+    def __init__(self, manager):
+        super().__init__()
+        self.manager = manager
+        self.loop = asyncio.get_event_loop()
+
+    def emit(self, record):
+        try:
+            msg = self.format(record)
+            # Schedule the broadcast in the event loop
+            if self.loop.is_running():
+                asyncio.run_coroutine_threadsafe(self.manager.broadcast(msg), self.loop)
+        except Exception:
+            self.handleError(record)
+
+# Initialize and attach handler
+# This should be called when the app starts, or we can attach it here if the logger is available globally.
+# However, the logger is in modules.logs.MyLogger.
+# We need to attach this handler to the root logger or the specific Kometa logger.
+
+def setup_log_handler():
+    # Get the root logger or specific logger
+    logger = logging.getLogger("Kometa")
+    ws_handler = WebSocketHandler(manager)
+    formatter = logging.Formatter('[%(asctime)s] [%(levelname)s] %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+    ws_handler.setFormatter(formatter)
+    logger.addHandler(ws_handler)
 
 @router.websocket("/ws/logs")
 async def websocket_endpoint(websocket: WebSocket):

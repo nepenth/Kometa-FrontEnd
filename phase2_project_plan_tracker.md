@@ -165,11 +165,13 @@ gantt
 ## 🛠️ Mock Replacement Tracker
 | Component | Location | Status | Replacement Task |
 |-----------|----------|--------|------------------|
-| User Auth | `kometa.py` | ⚠️ Mocked | Task 2.6 |
-| Config Read | `kometa.py` | ⚠️ Mocked | Task 2.6 |
-| Config Save | `kometa.py` | ⚠️ Mocked | Task 2.6 |
-| Operations | `kometa.py` | ⚠️ Mocked | Task 2.6 |
-| Status | `kometa.py` | ⚠️ Mocked | Task 2.6 |
+| User Auth | `routers/auth.py` | ✅ Resolved | Task 2.6 (Complete) |
+| Config Read | `routers/config.py` | ✅ Resolved | Task 2.6 (Complete) |
+| Config Save | `routers/config.py` | ✅ Resolved | Task 2.6 (Complete) |
+| Operations | `routers/scheduler.py` | ✅ Resolved | Task 2.6 (Complete) |
+| Status | `routers/scheduler.py` | ⚠️ Mocked | Task 2.6 |
+| Logs | `routers/logs.py` | ✅ Resolved | Task 2.6 (Complete) |
+| Execution | `modules/runner.py` | ✅ Resolved | Task 2.6 (Complete) |
 | API Calls | Frontend Slices | ✅ Resolved | Task 2.4 (Complete) |
 
 ## 📋 Daily Implementation Log
