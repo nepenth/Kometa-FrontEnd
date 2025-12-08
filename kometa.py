@@ -1181,57 +1181,6 @@ def run_playlists(config):
             #logger.remove_playlist_handler(playlist_log_name)
     return status, stats
 
-if __name__ == "__main__":
-    try:
-        # Check if web interface mode is requested
-        if run_args["web-interface"]:
-            logger.info("Starting Kometa in web interface mode")
-            logger.info(f"Web interface will be available on port {run_args['web-port']}")
-
-            # Start FastAPI server
-            start_fastapi_server()
-        elif run_args["run"] or run_args["tests"] or run_args["run-collections"] or run_args["run-libraries"] or run_args["run-files"] or run_args["resume"]:
-            process({"collections": run_args["run-collections"], "libraries": run_args["run-libraries"], "files": run_args["run-files"]})
-        else:
-            times_to_run = util.get_list_bar_then_comma(run_args["times"])
-            valid_times = []
-            for time_to_run in times_to_run:
-                try:
-                    final_time = datetime.strftime(datetime.strptime(time_to_run, "%H:%M"), "%H:%M")
-                    if final_time not in valid_times:
-                        valid_times.append(final_time)
-                except ValueError:
-                    if time_to_run:
-                        raise Failed(f"Argument Error: time argument invalid: {time_to_run} must be in the HH:MM format between 00:00-23:59")
-                    else:
-                        raise Failed(f"Argument Error: blank time argument")
-            for time_to_run in valid_times:
-                schedule.every().day.at(time_to_run).do(process, {"time": time_to_run})
-            while True:
-                schedule.run_pending()
-                if not run_args["no-countdown"]:
-                    current_time = datetime.now().strftime("%H:%M")
-                    seconds = None
-                    og_time_str = ""
-                    for time_to_run in valid_times:
-                        new_seconds = (datetime.strptime(time_to_run, "%H:%M") - datetime.strptime(current_time, "%H:%M")).total_seconds()
-                        if new_seconds < 0:
-                            new_seconds += 86400
-                        if (seconds is None or new_seconds < seconds) and new_seconds > 0:
-                            seconds = new_seconds
-                            og_time_str = time_to_run
-                    if seconds is not None:
-                        hours = int(seconds // 3600)
-                        minutes = int((seconds % 3600) // 60)
-                        time_str = f"{hours} Hour{'s' if hours > 1 else ''} and " if hours > 0 else ""
-                        time_str += f"{minutes} Minute{'s' if minutes > 1 else ''}"
-                        logger.ghost(f"Current Time: {current_time} | {time_str} until the next run at {og_time_str} | Runs: {', '.join(valid_times)}")
-                    else:
-                        logger.error(f"Time Error: {valid_times}")
-                time.sleep(60)
-    except KeyboardInterrupt:
-        logger.separator("Exiting Kometa")
-
 # FastAPI Web Interface Implementation
 def create_fastapi_app():
     if not FASTAPI_AVAILABLE:
@@ -1288,3 +1237,55 @@ def start_fastapi_server():
     except Exception as e:
         logger.error(f"Failed to start FastAPI server: {e}")
         logger.stacktrace()
+
+if __name__ == "__main__":
+    try:
+        # Check if web interface mode is requested
+        if run_args["web-interface"]:
+            logger.info("Starting Kometa in web interface mode")
+            logger.info(f"Web interface will be available on port {run_args['web-port']}")
+
+            # Start FastAPI server
+            start_fastapi_server()
+        elif run_args["run"] or run_args["tests"] or run_args["run-collections"] or run_args["run-libraries"] or run_args["run-files"] or run_args["resume"]:
+            process({"collections": run_args["run-collections"], "libraries": run_args["run-libraries"], "files": run_args["run-files"]})
+        else:
+            times_to_run = util.get_list_bar_then_comma(run_args["times"])
+            valid_times = []
+            for time_to_run in times_to_run:
+                try:
+                    final_time = datetime.strftime(datetime.strptime(time_to_run, "%H:%M"), "%H:%M")
+                    if final_time not in valid_times:
+                        valid_times.append(final_time)
+                except ValueError:
+                    if time_to_run:
+                        raise Failed(f"Argument Error: time argument invalid: {time_to_run} must be in the HH:MM format between 00:00-23:59")
+                    else:
+                        raise Failed(f"Argument Error: blank time argument")
+            for time_to_run in valid_times:
+                schedule.every().day.at(time_to_run).do(process, {"time": time_to_run})
+            while True:
+                schedule.run_pending()
+                if not run_args["no-countdown"]:
+                    current_time = datetime.now().strftime("%H:%M")
+                    seconds = None
+                    og_time_str = ""
+                    for time_to_run in valid_times:
+                        new_seconds = (datetime.strptime(time_to_run, "%H:%M") - datetime.strptime(current_time, "%H:%M")).total_seconds()
+                        if new_seconds < 0:
+                            new_seconds += 86400
+                        if (seconds is None or new_seconds < seconds) and new_seconds > 0:
+                            seconds = new_seconds
+                            og_time_str = time_to_run
+                    if seconds is not None:
+                        hours = int(seconds // 3600)
+                        minutes = int((seconds % 3600) // 60)
+                        time_str = f"{hours} Hour{'s' if hours > 1 else ''} and " if hours > 0 else ""
+                        time_str += f"{minutes} Minute{'s' if minutes > 1 else ''}"
+                        logger.ghost(f"Current Time: {current_time} | {time_str} until the next run at {og_time_str} | Runs: {', '.join(valid_times)}")
+                    else:
+                        logger.error(f"Time Error: {valid_times}")
+                time.sleep(60)
+    except KeyboardInterrupt:
+        logger.separator("Exiting Kometa")
+
