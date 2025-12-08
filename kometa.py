@@ -1426,16 +1426,110 @@ def create_fastapi_app():
             }
         }
 
+    @api_router.get("/config/schema", response_model=Dict[str, Any])
+    async def get_config_schema(current_user: User = Depends(get_current_user)):
+        # Mock schema for Monaco Editor intellisense
+        return {
+            "status": "success",
+            "message": "Schema retrieved",
+            "data": {
+                "libraries": {
+                    "type": "object",
+                    "description": "Library definitions",
+                    "additionalProperties": {
+                        "type": "object",
+                        "properties": {
+                            "metadata_path": {"type": "string"},
+                            "settings": {"type": "object"}
+                        }
+                    }
+                },
+                "playlist_files": {
+                    "type": "array",
+                    "items": {"type": "string"}
+                },
+                "settings": {
+                    "type": "object",
+                    "properties": {
+                        "cache": {"type": "boolean"},
+                        "cache_expiration": {"type": "integer"},
+                        "asset_directory": {"type": "string"}
+                    }
+                }
+            }
+        }
+
+    # Scheduler Endpoints (Mock)
+    @api_router.get("/scheduler/jobs", response_model=Dict[str, Any])
+    async def get_scheduler_jobs(current_user: User = Depends(get_current_user)):
+        # Mock jobs
+        return {
+            "status": "success",
+            "message": "Jobs retrieved",
+            "data": [
+                {
+                    "id": "plex_sync",
+                    "name": "Plex Sync",
+                    "schedule": "0 4 * * *",
+                    "next_run": (datetime.now() + timedelta(hours=4)).strftime("%Y-%m-%d %H:%M:%S"),
+                    "last_run": (datetime.now() - timedelta(hours=20)).strftime("%Y-%m-%d %H:%M:%S"),
+                    "status": "idle"
+                },
+                {
+                    "id": "trakt_sync",
+                    "name": "Trakt Sync",
+                    "schedule": "0 5 * * *",
+                    "next_run": (datetime.now() + timedelta(hours=5)).strftime("%Y-%m-%d %H:%M:%S"),
+                    "last_run": (datetime.now() - timedelta(hours=19)).strftime("%Y-%m-%d %H:%M:%S"),
+                    "status": "idle"
+                },
+                {
+                    "id": "overlays",
+                    "name": "Apply Overlays",
+                    "schedule": "0 2 * * *",
+                    "next_run": (datetime.now() + timedelta(hours=2)).strftime("%Y-%m-%d %H:%M:%S"),
+                    "last_run": (datetime.now() - timedelta(hours=22)).strftime("%Y-%m-%d %H:%M:%S"),
+                    "status": "running"
+                }
+            ]
+        }
+
+    @api_router.post("/scheduler/trigger/{job_id}", response_model=Dict[str, Any])
+    async def trigger_job(job_id: str, current_user: User = Depends(get_current_user)):
+        return {
+            "status": "success",
+            "message": f"Job {job_id} triggered",
+            "data": {
+                "job_id": job_id,
+                "status": "queued"
+            }
+        }
+
+    @api_router.post("/scheduler/schedule/{job_id}", response_model=Dict[str, Any])
+    async def update_schedule(job_id: str, schedule: str, current_user: User = Depends(get_current_user)):
+        return {
+            "status": "success",
+            "message": f"Schedule for {job_id} updated to {schedule}",
+            "data": {
+                "job_id": job_id,
+                "schedule": schedule
+            }
+        }
+
     # WebSocket for real-time updates
-    @api_router.websocket("/ws")
+    @app.websocket("/ws/logs")
     async def websocket_endpoint(websocket: WebSocket):
-        await websocket.accept()
+        await manager.connect(websocket)
         try:
             while True:
-                data = await websocket.receive_text()
-                await websocket.send_text(f"Message received: {data}")
+                # Keep connection alive
+                await websocket.receive_text()
         except WebSocketDisconnect:
-            print("Client disconnected")
+            manager.disconnect(websocket)
+
+    @app.on_event("startup")
+    async def startup_event():
+        asyncio.create_task(log_generator())
 
     # Mount API router
     app.include_router(api_router)

@@ -27,7 +27,8 @@ import {
     Description as LogsIcon,
     Logout as LogoutIcon,
     Person as PersonIcon,
-    ChevronLeft as ChevronLeftIcon
+    ChevronLeft as ChevronLeftIcon,
+    Schedule as ScheduleIcon
 } from '@mui/icons-material'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAppDispatch, useAppSelector } from '../store'
@@ -72,6 +73,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
         { text: 'Configuration', icon: <SettingsIcon />, path: '/config' },
         { text: 'Collections', icon: <CollectionsIcon />, path: '/collections' },
+        { text: 'Scheduler', icon: <ScheduleIcon />, path: '/scheduler' },
         { text: 'Logs', icon: <LogsIcon />, path: '/logs' },
     ]
 

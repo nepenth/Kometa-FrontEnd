@@ -6,6 +6,7 @@ import Layout from './components/Layout'
 import Dashboard from './pages/Dashboard'
 import ConfigEditor from './pages/ConfigEditor'
 import CollectionsManager from './pages/CollectionsManager'
+import SchedulerDashboard from './pages/Scheduler'
 import LogsViewer from './pages/LogsViewer'
 import Login from './pages/Login'
 import Loading from './components/Loading'
@@ -31,6 +32,7 @@ const App: React.FC = () => {
             <Route path="/" element={<Dashboard />} />
             <Route path="/config" element={<ConfigEditor />} />
             <Route path="/collections" element={<CollectionsManager />} />
+            <Route path="/scheduler" element={<SchedulerDashboard />} />
             <Route path="/logs" element={<LogsViewer />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </>

@@ -5,23 +5,15 @@ import { RootState } from '../../store'
 
 interface ConfigState {
   config: any
+  schema: any
   loading: boolean
   error: string | null
   lastUpdated: string | null
 }
 
-interface ConfigResponse {
-  status: string
-  message: string
-  data: {
-    config_files: string[]
-    current_config: string
-    config_content?: string
-  }
-}
-
 const initialState: ConfigState = {
   config: null,
+  schema: null,
   loading: false,
   error: null,
   lastUpdated: null
@@ -35,6 +27,18 @@ export const fetchConfig = createAsyncThunk(
       return response
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch config')
+    }
+  }
+)
+
+export const fetchConfigSchema = createAsyncThunk(
+  'config/fetchSchema',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await apiService.get<any>('/config/schema')
+      return response.data
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to fetch schema')
     }
   }
 )
@@ -76,6 +80,9 @@ const configSlice = createSlice({
       .addCase(fetchConfig.rejected, (state, action) => {
         state.loading = false
         state.error = action.payload as string
+      })
+      .addCase(fetchConfigSchema.fulfilled, (state, action) => {
+        state.schema = action.payload
       })
       .addCase(saveConfig.pending, (state) => {
         state.loading = true
