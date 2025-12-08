@@ -9,6 +9,7 @@ try:
     from fastapi import FastAPI, APIRouter, Depends, HTTPException, status, WebSocket, WebSocketDisconnect
     from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
     from fastapi.middleware.cors import CORSMiddleware
+    from fastapi.middleware.gzip import GZipMiddleware
     from fastapi.staticfiles import StaticFiles
     from pydantic import BaseModel
     from typing import Optional, List, Dict, Any
@@ -1253,6 +1254,9 @@ def create_fastapi_app():
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    # GZip Middleware
+    app.add_middleware(GZipMiddleware, minimum_size=1000)
 
     # Initialize Scheduler
     from modules.scheduler_manager import scheduler_manager

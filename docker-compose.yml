@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  kometa-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./config:/app/config
+      - ./logs:/app/logs
+    environment:
+      - KOMETA_CONFIG_DIR=/app/config
+    restart: unless-stopped
+
+  kometa-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - kometa-backend
+    restart: unless-stopped

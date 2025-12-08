@@ -28,7 +28,8 @@ import {
     Logout as LogoutIcon,
     Person as PersonIcon,
     ChevronLeft as ChevronLeftIcon,
-    Schedule as ScheduleIcon
+    Schedule as ScheduleIcon,
+    LibraryBooks as LibraryIcon
 } from '@mui/icons-material'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAppDispatch, useAppSelector } from '../store'

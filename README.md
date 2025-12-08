@@ -27,6 +27,7 @@ python3 -m venv venv
 source venv/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt
+pip install fastapi uvicorn pytest httpx  # Install web interface and testing dependencies
 ```
 
 ### Step 3: Configure Kometa
