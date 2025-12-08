@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
+import { apiService } from '../../services/api'
 import axios from 'axios'
 import { RootState } from '../../store'
 
@@ -43,45 +44,29 @@ const initialState: OperationsState = {
 
 export const fetchAvailableOperations = createAsyncThunk(
   'operations/fetchAvailable',
-  async (_, { getState, rejectWithValue }) => {
+  async (_, { rejectWithValue }) => {
     try {
-      const { auth } = getState() as RootState
-      const response = await axios.get<OperationResponse>('/api/v1/operations', {
-        headers: {
-          Authorization: `Bearer ${auth.token}`
-        }
-      })
-      return response.data.data
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        return rejectWithValue(error.response?.data?.message || 'Failed to fetch operations')
-      }
-      return rejectWithValue('An unknown error occurred')
+      const response = await apiService.get<any>('/operations')
+      // The API returns { status, message, data: { operations: [] } }
+      // apiService.get returns response.data, so we have the full object
+      return response.data.operations
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to fetch operations')
     }
   }
 )
 
 export const runOperation = createAsyncThunk(
   'operations/run',
-  async (operationRequest: OperationRequest, { getState, rejectWithValue }) => {
+  async (operationRequest: OperationRequest, { rejectWithValue }) => {
     try {
-      const { auth } = getState() as RootState
-      const response = await axios.post<OperationResponse>(
-        '/api/v1/operations',
-        operationRequest,
-        {
-          headers: {
-            Authorization: `Bearer ${auth.token}`,
-            'Content-Type': 'application/json'
-          }
-        }
+      const response = await apiService.post<OperationResponse>(
+        '/operations',
+        operationRequest
       )
-      return response.data.data
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        return rejectWithValue(error.response?.data?.message || 'Failed to run operation')
-      }
-      return rejectWithValue('An unknown error occurred')
+      return response.data
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to run operation')
     }
   }
 )

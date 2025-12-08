@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
-import axios from 'axios'
 import { jwtDecode } from 'jwt-decode'
+import { apiService } from '../../services/api'
+import axios from 'axios' // Keep for isAxiosError check if needed, or better, remove and use generic error handling
 
 // Define types
 interface AuthState {
@@ -44,7 +45,7 @@ export const login = createAsyncThunk(
   'auth/login',
   async (credentials: LoginCredentials, { rejectWithValue }) => {
     try {
-      const response = await axios.post<LoginResponse>('/api/v1/token', new URLSearchParams({
+      const response = await apiService.post<LoginResponse>('/token', new URLSearchParams({
         username: credentials.username,
         password: credentials.password,
         grant_type: 'password'
@@ -54,7 +55,7 @@ export const login = createAsyncThunk(
         }
       })
 
-      const { access_token } = response.data
+      const { access_token } = response
       localStorage.setItem('token', access_token)
 
       // Decode token to get user info
@@ -65,11 +66,8 @@ export const login = createAsyncThunk(
       }
 
       return { token: access_token, user }
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        return rejectWithValue(error.response?.data?.detail || 'Login failed')
-      }
-      return rejectWithValue('An unknown error occurred')
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.detail || 'Login failed')
     }
   }
 )

@@ -1,4 +1,5 @@
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit'
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
+import { apiService } from '../../services/api'
 import axios from 'axios'
 import { RootState } from '../../store'
 
@@ -28,45 +29,27 @@ const initialState: ConfigState = {
 
 export const fetchConfig = createAsyncThunk(
   'config/fetchConfig',
-  async (_, { getState, rejectWithValue }) => {
+  async (_, { rejectWithValue }) => {
     try {
-      const { auth } = getState() as RootState
-      const response = await axios.get<ConfigResponse>('/api/v1/config', {
-        headers: {
-          Authorization: `Bearer ${auth.token}`
-        }
-      })
-      return response.data
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        return rejectWithValue(error.response?.data?.message || 'Failed to fetch config')
-      }
-      return rejectWithValue('An unknown error occurred')
+      const response = await apiService.get<ConfigResponse>('/config')
+      return response
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to fetch config')
     }
   }
 )
 
 export const saveConfig = createAsyncThunk(
   'config/saveConfig',
-  async (configContent: string, { getState, rejectWithValue }) => {
+  async (configContent: string, { rejectWithValue }) => {
     try {
-      const { auth } = getState() as RootState
-      const response = await axios.post<ConfigResponse>(
-        '/api/v1/config',
-        { config_name: 'config.yml', config_content: configContent },
-        {
-          headers: {
-            Authorization: `Bearer ${auth.token}`,
-            'Content-Type': 'application/json'
-          }
-        }
+      const response = await apiService.post<ConfigResponse>(
+        '/config',
+        { config_name: 'config.yml', config_content: configContent }
       )
-      return response.data
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        return rejectWithValue(error.response?.data?.message || 'Failed to save config')
-      }
-      return rejectWithValue('An unknown error occurred')
+      return response
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to save config')
     }
   }
 )

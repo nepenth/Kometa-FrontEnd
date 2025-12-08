@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
+import { apiService } from '../../services/api'
 import axios from 'axios'
 import { RootState } from '../../store'
 
@@ -35,20 +36,12 @@ const initialState: StatusState = {
 
 export const fetchStatus = createAsyncThunk(
   'status/fetchStatus',
-  async (_, { getState, rejectWithValue }) => {
+  async (_, { rejectWithValue }) => {
     try {
-      const { auth } = getState() as RootState
-      const response = await axios.get<StatusResponse>('/api/v1/status', {
-        headers: {
-          Authorization: `Bearer ${auth.token}`
-        }
-      })
-      return response.data.data
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        return rejectWithValue(error.response?.data?.message || 'Failed to fetch status')
-      }
-      return rejectWithValue('An unknown error occurred')
+      const response = await apiService.get<StatusResponse>('/status')
+      return response.data
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to fetch status')
     }
   }
 )

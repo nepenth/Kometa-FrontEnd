@@ -34,15 +34,16 @@
 #### Tasks:
 - [x] 2.1: Set up Vite + ReactJS + TypeScript project ✅
 - [x] 2.2: Implement Redux Toolkit with RTK Query ✅
-- [ ] 2.3: Create Material-UI theme and component library
-- [ ] 2.4: Develop API service layer
+- [x] 2.3: Create Material-UI theme and component library ✅
+- [x] 2.4: Develop API service layer (Centralized Axios & Interceptors) ✅
 - [ ] 2.5: Implement React Router navigation
+- [ ] 2.6: Connect API endpoints to real Kometa logic (Replace Mocks)
 
 #### Deliverables:
 - [x] Complete ReactJS project structure ✅
 - [x] Redux store with RTK Query integration ✅
-- [ ] Material-UI theme and base components
-- [ ] API service layer with error handling
+- [x] Material-UI theme and base components ✅
+- [x] Centralized API service (`services/api.ts`) ✅
 - [ ] Navigation system with protected routes
 
 ### Week 3: Core Functionality
@@ -159,11 +160,17 @@ gantt
 3. **Real-time Complexity**: Test WebSocket stability
 4. **Configuration Compatibility**: Ensure YAML integration works
 
-### Mitigation Status:
-- [ ] Performance monitoring tools implemented
-- [ ] Security testing framework in place
-- [ ] WebSocket fallback strategy defined
 - [ ] YAML validation system created
+
+## 🛠️ Mock Replacement Tracker
+| Component | Location | Status | Replacement Task |
+|-----------|----------|--------|------------------|
+| User Auth | `kometa.py` | ⚠️ Mocked | Task 2.6 |
+| Config Read | `kometa.py` | ⚠️ Mocked | Task 2.6 |
+| Config Save | `kometa.py` | ⚠️ Mocked | Task 2.6 |
+| Operations | `kometa.py` | ⚠️ Mocked | Task 2.6 |
+| Status | `kometa.py` | ⚠️ Mocked | Task 2.6 |
+| API Calls | Frontend Slices | ✅ Resolved | Task 2.4 (Complete) |
 
 ## 📋 Daily Implementation Log
 

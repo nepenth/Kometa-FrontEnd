@@ -259,7 +259,7 @@ classDiagram
 
 #### 2.1.2 Authentication System
 - **Task**: Implement JWT-based authentication
-- **Approach**: OAuth2 with password flow + JWT tokens
+- **Approach**: OAuth2 with password flow + JWT tokens (Mocked User DB initially)
 - **Deliverables**:
   - Login endpoint
   - Token validation middleware
@@ -267,22 +267,44 @@ classDiagram
 
 #### 2.1.3 Configuration API
 - **Task**: Create configuration management endpoints
-- **Approach**: Wrap existing YAML config system
+- **Approach**: Wrap existing YAML config system (Mocked responses initially)
 - **Deliverables**:
   - GET/POST config endpoints
   - Config validation
   - Template management
 
+#### 2.1.4 Real Logic Integration (New)
+- **Task**: Connect API endpoints to Kometa internals
+- **Approach**: Replace mock data with actual calls to `kometa.py` modules
+- **Deliverables**:
+  - Real configuration reading/writing
+  - Real operation execution
+  - Real status reporting
+
 ### Phase 2.2: Frontend Foundation
 
 #### 2.2.1 ReactJS Project Setup
 - **Task**: Complete ReactJS project structure
-- **Approach**: Expand existing frontend skeleton
+- **Approach**: Expand existing frontend skeleton using Feature-based architecture
 - **Deliverables**:
   - Complete component structure
-  - Redux store configuration
-  - API service layer
+  - Redux store configuration (`store.ts`)
+  - Feature slices in `features/` directory
+  - API service layer in `services/`
   - Theme and styling system
+
+#### Directory Structure
+```
+src/
+├── components/      # Shared UI components
+├── features/        # Feature-based modules (Auth, Config, etc.)
+│   └── auth/        # Auth slice, components, and logic
+├── services/        # API configuration and endpoints
+├── store.ts         # Redux store setup
+├── theme.ts         # MUI Theme configuration
+├── App.tsx          # Main application component
+└── main.tsx         # Entry point
+```
 
 #### 2.2.2 Core UI Components
 - **Task**: Implement core UI components
@@ -447,6 +469,19 @@ classDiagram
 - [ ] Comprehensive error handling and user feedback
 - [ ] Full documentation and examples
 - [ ] Production-ready deployment
+
+## Mock Tracking
+The following components currently use mock data or logic and need to be replaced with real implementations:
+
+### Backend (kometa.py)
+- [ ] **Authentication**: `fake_users_db` and `authenticate_user` need to be replaced with real user management.
+- [ ] **Configuration Reading**: `get_config` endpoint returns hardcoded response.
+- [ ] **Configuration Saving**: `save_config` endpoint returns success without saving.
+- [ ] **Operations**: `run_operation` returns a fake UUID and queued status without triggering actual logic.
+- [ ] **Status**: `get_status` returns static version/uptime data.
+
+### Frontend
+- [ ] **API Service**: Direct Axios calls in slices need to be replaced with centralized `services/api.ts`.
 
 ## Next Steps
 
