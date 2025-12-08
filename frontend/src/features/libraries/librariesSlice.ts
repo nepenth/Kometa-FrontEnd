@@ -1,5 +1,5 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { apiService } from '../../services/api';
+import { createSlice, createAsyncThunk, PayloadAction, ActionReducerMapBuilder } from '@reduxjs/toolkit';
+import { apiService } from '../../services/api.js';
 
 export interface Library {
     name: string;
@@ -60,33 +60,33 @@ const librariesSlice = createSlice({
     name: 'libraries',
     initialState,
     reducers: {
-        clearCurrentLibrary: (state) => {
+        clearCurrentLibrary: (state: LibrariesState) => {
             state.currentLibrary = null;
         }
     },
-    extraReducers: (builder) => {
+    extraReducers: (builder: ActionReducerMapBuilder<LibrariesState>) => {
         builder
-            .addCase(fetchLibraries.pending, (state) => {
+            .addCase(fetchLibraries.pending, (state: LibrariesState) => {
                 state.loading = true;
                 state.error = null;
             })
-            .addCase(fetchLibraries.fulfilled, (state, action) => {
+            .addCase(fetchLibraries.fulfilled, (state: LibrariesState, action: PayloadAction<Library[]>) => {
                 state.loading = false;
                 state.libraries = action.payload;
             })
-            .addCase(fetchLibraries.rejected, (state, action) => {
+            .addCase(fetchLibraries.rejected, (state: LibrariesState, action: PayloadAction<any>) => {
                 state.loading = false;
                 state.error = action.payload as string;
             })
-            .addCase(fetchLibrary.pending, (state) => {
+            .addCase(fetchLibrary.pending, (state: LibrariesState) => {
                 state.loading = true;
                 state.error = null;
             })
-            .addCase(fetchLibrary.fulfilled, (state, action) => {
+            .addCase(fetchLibrary.fulfilled, (state: LibrariesState, action: PayloadAction<Library>) => {
                 state.loading = false;
                 state.currentLibrary = action.payload;
             })
-            .addCase(fetchLibrary.rejected, (state, action) => {
+            .addCase(fetchLibrary.rejected, (state: LibrariesState, action: PayloadAction<any>) => {
                 state.loading = false;
                 state.error = action.payload as string;
             });

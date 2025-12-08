@@ -2,7 +2,6 @@ import os, time
 from abc import ABC, abstractmethod
 from modules import util
 from modules.meta import MetadataFile, OverlayFile
-from modules.operations import Operations
 from modules.poster import ImageData
 from modules.util import Failed, NotScheduled
 from PIL import Image
@@ -16,6 +15,7 @@ class Library(ABC):
         self.Sonarr = None
         self.Tautulli = None
         self.Webhooks = None
+        from modules.operations import Operations
         self.Operations = Operations(config, self)
         self.Overlays = None
         self.collections = []

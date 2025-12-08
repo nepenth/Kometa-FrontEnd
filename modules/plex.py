@@ -1,6 +1,6 @@
 import os, plexapi, re, time
 from datetime import datetime, timedelta
-from modules import builder, util
+from modules import util
 from modules.library import Library
 from modules.poster import ImageData
 from modules.request import parse_qs, quote_plus, urlparse
@@ -1729,6 +1729,7 @@ class Plex(Library):
             return item_to_sort.titleSort if sort else item_to_sort.title
 
     def split(self, text):
+        from modules import builder
         attribute, modifier = os.path.splitext(str(text).lower())
         attribute = method_alias[attribute] if attribute in method_alias else attribute
         modifier = modifier_alias[modifier] if modifier in modifier_alias else modifier
@@ -1754,6 +1755,7 @@ class Plex(Library):
         return True
 
     def check_filter(self, item, filter_attr, modifier, filter_final, filter_data, current_time):
+        from modules import builder
         filter_actual = attribute_translation[filter_attr] if filter_attr in attribute_translation else filter_attr
         if isinstance(item, Movie):
             item_type = "movie"
