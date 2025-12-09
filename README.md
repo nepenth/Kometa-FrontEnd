@@ -314,6 +314,7 @@ nano .env
 3. **Configure your admin user** (example):
 ```ini
 # Admin user configuration
+# IMPORTANT: The username in the variable name (ADMIN) must match the username value
 KOMETA_USER_ADMIN_USERNAME=admin
 KOMETA_USER_ADMIN_PASSWORD=your-secure-password
 KOMETA_USER_ADMIN_FULL_NAME=Kometa Administrator
@@ -412,6 +413,7 @@ The web interface uses JWT (JSON Web Tokens) for authentication:
 **No users configured error**:
 - Make sure you have created a `.env` file with at least one user
 - Check that your environment variables are properly formatted
+- **Verify that the username in the variable name matches the username value**
 - Restart Kometa after creating/modifying the `.env` file
 
 ## 🔐 .env Authentication Configuration
@@ -467,17 +469,35 @@ python kometa.py --web
 ### Environment Variable Format
 
 The authentication system uses the following format:
-- `KOMETA_USER_<username>_USERNAME` - Username
+- `KOMETA_USER_<username>_USERNAME` - Username (must match the `<username>` in variable name)
 - `KOMETA_USER_<username>_PASSWORD` - Password (auto-hashed)
 - `KOMETA_USER_<username>_FULL_NAME` - Full name
 - `KOMETA_USER_<username>_EMAIL` - Email address
 - `KOMETA_USER_<username>_DISABLED` - `true`/`false`
 
-**Important Case Sensitivity Note**:
+**Important Format Rules**:
 - The `<username>` part in the environment variable name determines the actual username
 - `KOMETA_USER_ADMIN_*` creates a user with username "ADMIN" (uppercase)
 - `KOMETA_USER_admin_*` creates a user with username "admin" (lowercase)
+- **The username value must match the username in the variable name**
 - Use consistent case for usernames (recommended: lowercase for simplicity)
+
+**Example of Correct Format**:
+```ini
+# For username "admin":
+KOMETA_USER_ADMIN_USERNAME=admin
+KOMETA_USER_ADMIN_PASSWORD=your-password
+KOMETA_USER_ADMIN_FULL_NAME=Administrator
+KOMETA_USER_ADMIN_EMAIL=admin@example.com
+KOMETA_USER_ADMIN_DISABLED=false
+```
+
+**Example of Incorrect Format** (will cause errors):
+```ini
+# ❌ WRONG - username in variable doesn't match username value
+KOMETA_USER_ADMIN_USERNAME=nepenthe  # Variable says "ADMIN" but value is "nepenthe"
+KOMETA_USER_ADMIN_PASSWORD=password
+```
 
 ### Password Security
 

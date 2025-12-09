@@ -11,6 +11,7 @@ try:
     from fastapi.middleware.cors import CORSMiddleware
     from fastapi.middleware.gzip import GZipMiddleware
     from fastapi.staticfiles import StaticFiles
+    from fastapi.responses import FileResponse
     from pydantic import BaseModel
     from typing import Optional, List, Dict, Any
     import uvicorn
@@ -1228,6 +1229,14 @@ def create_fastapi_app():
     @app.get("/")
     async def read_root():
         return {"message": "Kometa Web Interface - Use the API endpoints or access the frontend at /index.html"}
+
+    # Catch-all route for React SPA routing - serve index.html for all non-API routes
+    @app.get("/{full_path:path}")
+    async def catch_all(full_path: str):
+        # Don't interfere with API routes
+        if full_path.startswith("api/") or full_path.startswith("assets/") or full_path.startswith("favicon.ico"):
+            raise HTTPException(status_code=404, detail="Not found")
+        return FileResponse("public/index.html")
 
     @app.on_event("startup")
     async def startup_event():

@@ -33,11 +33,16 @@ def load_users_from_env():
         username_parts = username_part.split("_", 1)  # Split on first underscore only
         username = username_parts[0]
 
-        if username not in users_db:
-            users_db[username] = {
-                "username": username,
-                "full_name": env_vars.get(f"KOMETA_USER_{username}_FULL_NAME", f"Kometa User {username}"),
-                "email": env_vars.get(f"KOMETA_USER_{username}_EMAIL", f"{username}@kometa.local"),
+        # Get the actual username value from the environment variable
+        actual_username = env_vars.get(f"KOMETA_USER_{username}_USERNAME")
+        if not actual_username:
+            continue  # Skip if username is not set
+
+        if actual_username not in users_db:
+            users_db[actual_username] = {
+                "username": actual_username,
+                "full_name": env_vars.get(f"KOMETA_USER_{username}_FULL_NAME", f"Kometa User {actual_username}"),
+                "email": env_vars.get(f"KOMETA_USER_{username}_EMAIL", f"{actual_username}@kometa.local"),
                 "hashed_password": None,
                 "disabled": env_vars.get(f"KOMETA_USER_{username}_DISABLED", "false").lower() == "true"
             }
@@ -47,9 +52,9 @@ def load_users_from_env():
         if password:
             # Hash the password if it's not already hashed
             if not password.startswith("$2b$"):
-                users_db[username]["hashed_password"] = pwd_context.hash(password)
+                users_db[actual_username]["hashed_password"] = pwd_context.hash(password)
             else:
-                users_db[username]["hashed_password"] = password
+                users_db[actual_username]["hashed_password"] = password
 
     return users_db
 
