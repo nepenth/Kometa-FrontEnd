@@ -211,7 +211,8 @@ npm run build
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/api/v1/token` | POST | Authentication endpoint |
+| `/api/v1/auth/token` | POST | Authentication endpoint |
+| `/api/v1/auth/users/me` | GET | Get current user info |
 | `/api/v1/config` | GET/POST | Configuration management |
 | `/api/v1/operations` | GET/POST | Operations execution |
 | `/api/v1/status` | GET | System status |
@@ -283,6 +284,221 @@ python kometa.py --web  # This is ALL you need!
 - **Step 4 (CLI Mode)**: Traditional command-line execution
 - **Step 5 (Web Mode)**: Graphical interface with same functionality
 - **Step 6 (Frontend Build)**: Optional UI enhancement
+
+## 🔐 Authentication Setup
+
+### Important: No Default Credentials
+**Kometa now requires explicit authentication configuration** via `.env` file.
+There are **no hardcoded default users** - you must configure at least one user.
+
+### Login Instructions
+1. **Access the web interface**: Open your browser to `http://your-plex-server:8000`
+2. **Login page**: You'll see a login form
+3. **Enter credentials**: Use the default username and password above
+4. **Click Login**: You'll be redirected to the dashboard
+
+### Setting Up Your First User
+
+Since there are no default users, you **must** configure at least one user in your `.env` file:
+
+1. **Copy the example file**:
+```bash
+cp .env.example .env
+```
+
+2. **Edit the .env file**:
+```bash
+nano .env
+```
+
+3. **Configure your admin user** (example):
+```ini
+# Admin user configuration
+KOMETA_USER_ADMIN_USERNAME=admin
+KOMETA_USER_ADMIN_PASSWORD=your-secure-password
+KOMETA_USER_ADMIN_FULL_NAME=Kometa Administrator
+KOMETA_USER_ADMIN_EMAIL=admin@yourdomain.com
+KOMETA_USER_ADMIN_DISABLED=false
+```
+
+4. **Generate a strong secret key**:
+```bash
+openssl rand -hex 32
+```
+
+### Generating Password Hashes
+**Simplified Method** (no virtual environment needed):
+
+```bash
+# Use this simple command to generate a bcrypt hash
+htpasswd -bnBC 10 "" yourpassword | tr -d ':\n'
+```
+
+**Alternative Method** (if htpasswd not available):
+
+```bash
+# Install bcrypt if needed
+pip install bcrypt
+
+# Generate hash
+python3 -c "
+import bcrypt
+password = input('Enter password: ')
+hashed = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+print(f'Hashed password: {hashed.decode(\"utf-8\")}')
+"
+```
+
+**Important Notes**:
+- Passwords are **automatically hashed** when using plaintext in `.env`
+- Maximum password length: 72 characters (bcrypt limitation)
+- Use strong passwords (minimum 12 characters recommended)
+
+### Adding Additional Users
+Add more users to the `fake_users_db` dictionary:
+
+```python
+fake_users_db = {
+    "admin": {
+        "username": "admin",
+        "full_name": "Kometa Admin",
+        "email": "admin@kometa.example.com",
+        "hashed_password": "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW",
+        "disabled": False,
+    },
+    "user2": {  # Add new user
+        "username": "user2",
+        "full_name": "Second User",
+        "email": "user2@kometa.example.com",
+        "hashed_password": "generated_hash_here",
+        "disabled": False,
+    }
+}
+```
+
+### Authentication API Endpoints
+- **Login**: `POST /api/v1/auth/token` - Get JWT token
+- **User Info**: `GET /api/v1/auth/users/me` - Get current user info
+
+### JWT Token Usage
+The web interface uses JWT (JSON Web Tokens) for authentication:
+1. Login with username/password to get a token
+2. Token is stored in the browser's localStorage
+3. Token is sent with API requests in the Authorization header
+4. Token expires after 30 minutes (configurable)
+
+### Security Best Practices
+- ✅ **Use strong passwords** (minimum 12 characters)
+- ✅ **Disable unused accounts** by setting `DISABLED=true`
+- ✅ **Rotate tokens** periodically
+- ✅ **Use HTTPS** in production environments
+- ✅ **Keep .env file secure** - never commit to version control
+
+### Troubleshooting Authentication
+**Login fails with "Incorrect username or password"**:
+- Verify you're using the correct credentials
+- Check that the user exists in your `.env` configuration
+- Ensure the password is correct (passwords are auto-hashed)
+
+**Token expired**:
+- Log out and log back in to get a new token
+- Tokens automatically expire after 30 minutes
+
+**401 Unauthorized errors**:
+- Make sure you're logged in
+- Check that your token is valid
+- Try refreshing the page or logging out/in
+
+**No users configured error**:
+- Make sure you have created a `.env` file with at least one user
+- Check that your environment variables are properly formatted
+- Restart Kometa after creating/modifying the `.env` file
+
+## 🔐 .env Authentication Configuration
+
+### Environment Variable Setup
+
+Kometa now supports **environment variable-based authentication**, allowing you to configure users without modifying Python code. This is the **recommended approach** for production deployments.
+
+### Step-by-Step Setup
+
+#### 1. Copy the Example File
+```bash
+cp .env.example .env
+```
+
+#### 2. Configure Authentication in .env
+Edit the `.env` file and configure your users:
+
+```ini
+# Basic authentication settings
+KOMETA_SECRET_KEY=your-strong-random-secret-key-here
+KOMETA_TOKEN_EXPIRE_MINUTES=30
+
+# Admin user configuration
+KOMETA_USER_ADMIN_USERNAME=admin
+KOMETA_USER_ADMIN_PASSWORD=your-secure-password
+KOMETA_USER_ADMIN_FULL_NAME=Kometa Administrator
+KOMETA_USER_ADMIN_EMAIL=admin@yourdomain.com
+KOMETA_USER_ADMIN_DISABLED=false
+
+# Additional users (optional)
+KOMETA_USER_USER2_USERNAME=user2
+KOMETA_USER_USER2_PASSWORD=another-password
+KOMETA_USER_USER2_FULL_NAME=Second User
+KOMETA_USER_USER2_EMAIL=user2@yourdomain.com
+KOMETA_USER_USER2_DISABLED=false
+```
+
+#### 3. Generate a Strong Secret Key
+For production, generate a strong secret key:
+```bash
+openssl rand -hex 32
+```
+
+#### 4. Restart Kometa
+The authentication system will automatically load users from the `.env` file:
+```bash
+# Restart Kometa to apply changes
+source venv/bin/activate
+python kometa.py --web
+```
+
+### Environment Variable Format
+
+The authentication system uses the following format:
+- `KOMETA_USER_<username>_USERNAME` - Username
+- `KOMETA_USER_<username>_PASSWORD` - Password (auto-hashed)
+- `KOMETA_USER_<username>_FULL_NAME` - Full name
+- `KOMETA_USER_<username>_EMAIL` - Email address
+- `KOMETA_USER_<username>_DISABLED` - `true`/`false`
+
+**Important Case Sensitivity Note**:
+- The `<username>` part in the environment variable name determines the actual username
+- `KOMETA_USER_ADMIN_*` creates a user with username "ADMIN" (uppercase)
+- `KOMETA_USER_admin_*` creates a user with username "admin" (lowercase)
+- Use consistent case for usernames (recommended: lowercase for simplicity)
+
+### Password Security
+
+- ✅ **Auto-hashing**: Passwords are automatically hashed using bcrypt
+- ✅ **Pre-hashed support**: You can provide bcrypt hashes directly (starting with `$2b$`)
+- ✅ **Strong defaults**: Minimum 12 characters recommended
+- ✅ **Environment security**: Never commit `.env` to version control
+
+### Important: Required .env Configuration
+
+**Kometa now requires explicit authentication configuration** via `.env` file:
+- There are **no hardcoded default users**
+- You **must** configure at least one user in your `.env` file
+
+### API Endpoint Correction
+
+**Important**: The authentication endpoint is at:
+- **Correct URL**: `POST /api/v1/auth/token`
+- **Incorrect URL**: `POST /api/v1/token` (will return 405 error)
+
+Update any frontend code to use the correct endpoint.
 
 ## 📋 Usage Examples
 

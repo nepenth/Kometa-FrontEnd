@@ -1221,6 +1221,14 @@ def create_fastapi_app():
     app.include_router(scheduler.router, prefix="/api/v1", tags=["Scheduler"])
     app.include_router(logs.router, tags=["Logs"])
 
+    # Serve static files from the public directory
+    app.mount("/", StaticFiles(directory="public", html=True), name="static")
+
+    # Root route to serve the main HTML file
+    @app.get("/")
+    async def read_root():
+        return {"message": "Kometa Web Interface - Use the API endpoints or access the frontend at /index.html"}
+
     @app.on_event("startup")
     async def startup_event():
         # Setup the log handler to stream logs to WebSockets

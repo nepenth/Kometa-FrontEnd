@@ -298,3 +298,7 @@ frontend/.env*.local.development.test.staging
 frontend/.env*.local.production.test.staging
 frontend/.env*.development.production.test.staging
 frontend/.env*.local.development.production.test.staging
+
+
+# Test Venv
+test_venv/*

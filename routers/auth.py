@@ -12,21 +12,58 @@ router = APIRouter()
 # Security Configuration
 SECRET_KEY = os.getenv("KOMETA_SECRET_KEY", "09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("KOMETA_TOKEN_EXPIRE_MINUTES", "30"))
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
-# Mock User Database
-fake_users_db = {
-    "admin": {
-        "username": "admin",
-        "full_name": "Kometa Admin",
-        "email": "admin@kometa.example.com",
-        "hashed_password": "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW",  # "secret"
-        "disabled": False,
-    }
-}
+def load_users_from_env():
+    """Load user configuration from environment variables"""
+    users_db = {}
+
+    # Load users from environment variables
+    # Format: KOMETA_USER_<username>_USERNAME, KOMETA_USER_<username>_PASSWORD, etc.
+    env_vars = os.environ
+    user_prefixes = [key for key in env_vars.keys() if key.startswith("KOMETA_USER_")]
+
+    for prefix in set(user_prefixes):
+        # Extract username from prefix (KOMETA_USER_<username>_*)
+        username_part = prefix.replace("KOMETA_USER_", "")
+        # Get the username part (everything before the first underscore after KOMETA_USER_)
+        username_parts = username_part.split("_", 1)  # Split on first underscore only
+        username = username_parts[0]
+
+        if username not in users_db:
+            users_db[username] = {
+                "username": username,
+                "full_name": env_vars.get(f"KOMETA_USER_{username}_FULL_NAME", f"Kometa User {username}"),
+                "email": env_vars.get(f"KOMETA_USER_{username}_EMAIL", f"{username}@kometa.local"),
+                "hashed_password": None,
+                "disabled": env_vars.get(f"KOMETA_USER_{username}_DISABLED", "false").lower() == "true"
+            }
+
+        # Get password from environment variable
+        password = env_vars.get(f"KOMETA_USER_{username}_PASSWORD")
+        if password:
+            # Hash the password if it's not already hashed
+            if not password.startswith("$2b$"):
+                users_db[username]["hashed_password"] = pwd_context.hash(password)
+            else:
+                users_db[username]["hashed_password"] = password
+
+    return users_db
+
+# Load users from environment variables only
+fake_users_db = load_users_from_env()
+
+# If no users are configured, raise an error with helpful instructions
+if not fake_users_db:
+    raise RuntimeError(
+        "No authentication users configured. "
+        "Please set up users in your .env file using the format: "
+        "KOMETA_USER_<username>_USERNAME, KOMETA_USER_<username>_PASSWORD, etc. "
+        "See .env.example for details."
+    )
 
 class Token(BaseModel):
     access_token: str
@@ -82,13 +119,13 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     )
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username: str = payload.get("sub")
+        username = payload.get("sub")
         if username is None:
             raise credentials_exception
         token_data = TokenData(username=username)
     except JWTError:
         raise credentials_exception
-    user = get_user(fake_users_db, username=token_data.username)
+    user = get_user(fake_users_db, username=token_data.username) if token_data.username else None
     if user is None:
         raise credentials_exception
     return user
