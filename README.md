@@ -328,18 +328,33 @@ openssl rand -hex 32
 ```
 
 ### Generating Password Hashes
-**Simplified Method** (no virtual environment needed):
+**Recommended Method** (using Kometa's virtual environment):
+
+```bash
+# Activate Kometa's virtual environment
+source venv/bin/activate
+
+# Generate hash using passlib (same library as Kometa)
+python3 -c "
+from passlib.hash import bcrypt
+password = input('Enter password: ')
+hashed = bcrypt.hash(password)
+print(f'Hashed password: {hashed}')
+"
+```
+
+**Alternative Method** (if htpasswd available):
 
 ```bash
 # Use this simple command to generate a bcrypt hash
 htpasswd -bnBC 10 "" yourpassword | tr -d ':\n'
 ```
 
-**Alternative Method** (if htpasswd not available):
+**Direct bcrypt method** (if needed):
 
 ```bash
 # Install bcrypt if needed
-pip install bcrypt
+pip install bcrypt==4.1.3
 
 # Generate hash
 python3 -c "

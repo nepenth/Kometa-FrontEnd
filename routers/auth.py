@@ -52,6 +52,13 @@ def load_users_from_env():
         if password:
             # Hash the password if it's not already hashed
             if not password.startswith("$2b$"):
+                # Validate password length before hashing
+                if len(password.encode('utf-8')) > 72:
+                    raise ValueError(
+                        f"Password for user '{actual_username}' is too long ({len(password.encode('utf-8'))} bytes). "
+                        f"Bcrypt requires passwords to be 72 bytes or less. "
+                        f"Please use a shorter password or truncate it manually."
+                    )
                 users_db[actual_username]["hashed_password"] = pwd_context.hash(password)
             else:
                 users_db[actual_username]["hashed_password"] = password
@@ -87,11 +94,29 @@ class UserInDB(User):
     hashed_password: str
 
 def verify_password(plain_password, hashed_password):
+    # Debug information
+    print(f"DEBUG: verify_password called with:")
+    print(f"  plain_password: '{plain_password}' (length: {len(plain_password)} chars, {len(plain_password.encode('utf-8'))} bytes)")
+    print(f"  hashed_password: '{hashed_password[:20]}...' (length: {len(hashed_password)} chars)")
+    print(f"  plain_password starts with $2b$: {plain_password.startswith('$2b$')}")
+
     # Only validate length for plain text passwords, not hashes
     # If the "plain_password" is actually a hash (starts with $2b$), skip length check
     if not plain_password.startswith('$2b$') and len(plain_password.encode('utf-8')) > 72:
+        print("DEBUG: Password too long, returning False")
         return False
-    return pwd_context.verify(plain_password, hashed_password)
+
+    print("DEBUG: Calling pwd_context.verify...")
+    try:
+        result = pwd_context.verify(plain_password, hashed_password)
+        print(f"DEBUG: Verification result: {result}")
+        return result
+    except Exception as e:
+        print(f"DEBUG: Exception during verification: {e}")
+        print(f"DEBUG: Exception type: {type(e)}")
+        import traceback
+        traceback.print_exc()
+        return False
 
 def get_password_hash(password):
     # bcrypt has a 72-byte limit for plain text passwords

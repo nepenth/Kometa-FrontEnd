@@ -26,4 +26,4 @@ passlib[bcrypt]
 python-multipart
 aiofiles
 PyYAML
-bcrypt
+bcrypt==4.1.3
