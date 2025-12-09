@@ -6,22 +6,22 @@ const resources = {
   en: {
     translation: {
       // Add your English translations here
-      "welcome": "Welcome to Kometa",
-      "dashboard": "Dashboard",
-      "collections": "Collections",
-      "settings": "Settings",
-      "save": "Save",
-      "cancel": "Cancel",
-      "loading": "Loading...",
-      "error": "Error",
-      "success": "Success",
-      "configuration": "Configuration",
-      "operations": "Operations",
-      "logs": "Logs",
-      "scheduler": "Scheduler",
-      "overlay_editor": "Overlay Editor"
-    }
-  }
+      welcome: 'Welcome to Kometa',
+      dashboard: 'Dashboard',
+      collections: 'Collections',
+      settings: 'Settings',
+      save: 'Save',
+      cancel: 'Cancel',
+      loading: 'Loading...',
+      error: 'Error',
+      success: 'Success',
+      configuration: 'Configuration',
+      operations: 'Operations',
+      logs: 'Logs',
+      scheduler: 'Scheduler',
+      overlay_editor: 'Overlay Editor',
+    },
+  },
 };
 
 i18n
@@ -31,9 +31,9 @@ i18n
     lng: 'en', // default language
     fallbackLng: 'en',
     interpolation: {
-      escapeValue: false // react already safes from xss
+      escapeValue: false, // react already safes from xss
     },
-    debug: false
+    debug: false,
   });
 
 export default i18n;
