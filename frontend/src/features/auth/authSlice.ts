@@ -45,7 +45,7 @@ export const login = createAsyncThunk(
   'auth/login',
   async (credentials: LoginCredentials, { rejectWithValue }) => {
     try {
-      const response = await apiService.post<LoginResponse>('/token', new URLSearchParams({
+      const response = await apiService.post<LoginResponse>('/auth/token', new URLSearchParams({
         username: credentials.username,
         password: credentials.password,
         grant_type: 'password'

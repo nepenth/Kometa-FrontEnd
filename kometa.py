@@ -1222,6 +1222,7 @@ def create_fastapi_app():
     app.include_router(scheduler.router, prefix="/api/v1", tags=["Scheduler"])
     app.include_router(logs.router, tags=["Logs"])
 
+
     # Serve static files from the public directory
     app.mount("/", StaticFiles(directory="public", html=True), name="static")
 

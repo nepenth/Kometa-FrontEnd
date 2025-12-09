@@ -87,9 +87,17 @@ class UserInDB(User):
     hashed_password: str
 
 def verify_password(plain_password, hashed_password):
+    # Only validate length for plain text passwords, not hashes
+    # If the "plain_password" is actually a hash (starts with $2b$), skip length check
+    if not plain_password.startswith('$2b$') and len(plain_password.encode('utf-8')) > 72:
+        return False
     return pwd_context.verify(plain_password, hashed_password)
 
 def get_password_hash(password):
+    # bcrypt has a 72-byte limit for plain text passwords
+    # Skip validation if this is already a hash (starts with $2b$)
+    if not password.startswith('$2b$') and len(password.encode('utf-8')) > 72:
+        raise ValueError("Plain text password cannot be longer than 72 bytes for bcrypt hashing")
     return pwd_context.hash(password)
 
 def get_user(db, username: str):
