@@ -1215,12 +1215,13 @@ def create_fastapi_app():
 
     # Include Routers
     # Import here to avoid circular imports or dependency issues if FastAPI is missing
-    from routers import auth, config, scheduler, logs, libraries
+    from routers import auth, config, scheduler, logs, libraries, operations
     app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
     app.include_router(config.router, prefix="/api/v1", tags=["Configuration"])
     app.include_router(libraries.router, prefix="/api/v1", tags=["Libraries"])
     app.include_router(scheduler.router, prefix="/api/v1", tags=["Scheduler"])
     app.include_router(logs.router, tags=["Logs"])
+    app.include_router(operations.router, prefix="/api/v1", tags=["Operations"])
 
 
     # Serve static files from the public directory
